@@ -83,8 +83,8 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'LifePilot', {
       body: data.body || '',
-      icon: '/LifePilot/icon-192.png',
-      badge: '/LifePilot/icon-72.png',
+      icon: '/LifePilot/icon.svg',
+      badge: '/LifePilot/icon.svg',
       tag: data.tag || 'lifepilot',
       data: data
     })
