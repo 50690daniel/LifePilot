@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>LifePilot · Ocio</title>
+<style>
+/* ══════════════════════════════════════
+   DESIGN SYSTEM — dark cinematic
+══════════════════════════════════════ */
+:root{
+  --bg:#080810;
+  --bg2:#0D0D18;
+  --glass:rgba(255,255,255,.055);
+  --glass2:rgba(255,255,255,.09);
+  --brd:rgba(255,255,255,.08);
+  --brd2:rgba(255,255,255,.14);
+  --tx:#FFFFFF;
+  --tx2:rgba(255,255,255,.6);
+  --tx3:rgba(255,255,255,.32);
+  --tx4:rgba(255,255,255,.16);
+  --red:#FF453A;    --red-d:rgba(255,69,58,.15);
+  --org:#FF9F0A;    --org-d:rgba(255,159,10,.15);
+  --yel:#FFD60A;    --yel-d:rgba(255,214,10,.12);
+  --grn:#34D058;    --grn-d:rgba(52,208,88,.14);
+  --teal:#5AC8FA;   --teal-d:rgba(90,200,250,.14);
+  --blu:#2C7EFF;    --blu-d:rgba(44,126,255,.14);
+  --pur:#BF5AF2;    --pur-d:rgba(191,90,242,.14);
+  --pink:#FF375F;   --pink-d:rgba(255,55,95,.14);
+  --sab:env(safe-area-inset-bottom,34px);
+  --sat:env(safe-area-inset-top,44px);
+  --f:'SF Pro Display',-apple-system,sans-serif;
+  --r:14px; --r2:20px; --r3:26px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);font-family:var(--f);color:var(--tx);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ── AMBIENT BACKGROUND ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 0% 0%,rgba(191,90,242,.07),transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%,rgba(255,69,58,.06),transparent 55%),
+    radial-gradient(ellipse 50% 60% at 50% 50%,rgba(44,126,255,.04),transparent 70%);
+}
+
+/* ── LAYOUT ── */
+#app{position:relative;z-index:1;max-width:480px;margin:0 auto;min-height:100dvh;padding:0 16px calc(var(--sab)+24px)}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(var(--sat)+10px) 0 18px;
+}
+.tb-back{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--glass);border:1px solid var(--brd);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:var(--tx2);cursor:pointer;
+  text-decoration:none;flex-shrink:0;
+}
+.tb-title{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.tb-stats{
+  font-size:11px;font-weight:600;color:var(--tx3);
+  padding:5px 12px;background:var(--glass);
+  border-radius:100px;border:1px solid var(--brd);
+}
+
+/* ── NAV TABS (bottom) ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(8,8,16,.92);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid var(--brd);
+  display:flex;align-items:flex-start;justify-content:space-around;
+  padding:10px 0 calc(var(--sab));z-index:100;
+}
+.bn-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  cursor:pointer;padding:0 12px;opacity:.38;transition:opacity .15s;
+  min-width:56px;
+}
+.bn-item.active{opacity:1}
+.bn-icon{font-size:22px;line-height:1}
+.bn-label{font-size:10px;font-weight:600;color:var(--tx2)}
+.bn-item.active .bn-label{color:var(--tx)}
+
+/* ── SCREEN ── */
+.screen{display:none;animation:fadeUp .28s cubic-bezier(.22,.1,.25,1)}
+.screen.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CARDS ── */
+.card{
+  background:var(--glass);border:1px solid var(--brd);
+  border-radius:var(--r2);position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
+  pointer-events:none;
+}
+.pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 12px;border-radius:100px;
+  font-size:11px;font-weight:700;border:1px solid;
+  cursor:pointer;transition:all .14s;
+}
+.pill:active{transform:scale(.93)}
+
+/* ── TIME PILL ── */
+.time-btn{
+  flex:1;padding:12px 8px;border-radius:var(--r);
+  background:var(--glass);border:1px solid var(--brd);
+  text-align:center;cursor:pointer;transition:all .14s;
+  font-size:13px;font-weight:700;color:var(--tx2);
+}
+.time-btn.sel{background:rgba(255,159,10,.15);border-color:rgba(255,159,10,.3);color:var(--org)}
+.time-btn:active{transform:scale(.93)}
+
+/* ── SUGGESTION HERO ── */
+.sugg-hero{
+  border-radius:var(--r3);overflow:hidden;
+  margin-bottom:16px;cursor:pointer;position:relative;
+  min-height:140px;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  transition:transform .14s;
+}
+.sugg-hero:active{transform:scale(.97)}
+.sugg-bg{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:90px;opacity:.15;user-select:none;
+}
+.sugg-content{
+  position:relative;z-index:1;
+  padding:20px;
+  background:linear-gradient(0deg,rgba(0,0,0,.8) 0%,transparent 100%);
+}
+.sugg-kicker{
+  font-size:10px;font-weight:800;text-transform:uppercase;
+  letter-spacing:1px;margin-bottom:6px;
+}
+.sugg-title{font-size:22px;font-weight:800;letter-spacing:-.4px;margin-bottom:4px}
+.sugg-sub{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:12px}
+.sugg-cta{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:10px 18px;border-radius:100px;
+  font-size:13px;font-weight:800;color:#000;
+  transition:all .14s;
+}
+.sugg-cta:active{transform:scale(.95)}
+
+/* ── CHANNEL CARD ── */
+.ch-card{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 16px;margin-bottom:8px;
+  background:var(--glass);border:1px solid var(--brd);
+  border-radius:18px;cursor:pointer;position:relative;overflow:hidden;
+  transition:background .14s;
+}
+.ch-card:active{background:var(--glass2)}
+.ch-avatar{
+  width:46px;height:46px;border-radius:50%;flex-shrink:0;
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;color:#fff;
+}
+.ch-avatar img{width:100%;height:100%;object-fit:cover}
+.ch-info{flex:1;min-width:0}
+.ch-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-desc{font-size:12px;color:var(--tx3);margin-top:2px}
+.ch-since{font-size:10px;font-weight:600;color:var(--tx4);margin-top:3px}
+.ch-arrow{font-size:18px;color:var(--tx4)}
+.ch-accentbar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:18px 0 0 18px}
+
+/* ── MOVIE CARD ── */
+.mov-card{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:14px 16px;margin-bottom:8px;
+  background:var(--glass);border:1px solid var(--brd);
+  border-radius:18px;
+}
+.mov-poster{
+  width:48px;height:68px;border-radius:10px;flex-shrink:0;
+  background:var(--glass2);display:flex;align-items:center;
+  justify-content:center;font-size:24px;overflow:hidden;
+}
+.mov-poster img{width:100%;height:100%;object-fit:cover}
+.mov-info{flex:1;min-width:0}
+.mov-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.mov-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.mov-tag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px}
+.mov-actions{display:flex;gap:6px}
+.mov-btn{
+  padding:7px 14px;border-radius:100px;
+  font-size:12px;font-weight:700;cursor:pointer;
+  border:1px solid;transition:all .14s;
+}
+.mov-btn:active{transform:scale(.93)}
+.mov-stars{display:flex;gap:3px;margin-top:6px}
+.mov-star{font-size:16px;cursor:pointer;transition:transform .1s}
+.mov-star:active{transform:scale(1.3)}
+
+/* ── PODCAST CARD ── */
+.pod-card{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;margin-bottom:8px;
+  background:var(--glass);border:1px solid var(--brd);
+  border-radius:18px;cursor:pointer;
+  transition:background .14s;
+}
+.pod-card:active{background:var(--glass2)}
+.pod-ico{
+  width:46px;height:46px;border-radius:14px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.pod-info{flex:1;min-width:0}
+.pod-name{font-size:14px;font-weight:700}
+.pod-ep{font-size:12px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pod-dur{font-size:10px;font-weight:700;color:var(--tx4);margin-top:3px}
+.pod-play{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:transform .14s;
+}
+.pod-play:active{transform:scale(.88)}
+
+/* ── PLAYLIST CARD ── */
+.pl-card{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;margin-bottom:8px;
+  background:var(--glass);border:1px solid var(--brd);
+  border-radius:18px;cursor:pointer;transition:background .14s;
+}
+.pl-card:active{background:var(--glass2)}
+.pl-ico{width:44px;height:44px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px}
+.pl-info{flex:1}
+.pl-name{font-size:14px;font-weight:700}
+.pl-desc{font-size:12px;color:var(--tx3);margin-top:2px}
+.pl-open{font-size:12px;font-weight:700;flex-shrink:0}
+
+/* ── HISTORIAL ── */
+.hist-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;border-bottom:1px solid var(--brd);
+}
+.hist-item:last-child{border-bottom:none}
+.hist-ico{font-size:20px;flex-shrink:0}
+.hist-info{flex:1;min-width:0}
+.hist-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-meta{font-size:11px;color:var(--tx3);margin-top:2px}
+.hist-date{font-size:11px;color:var(--tx4);flex-shrink:0}
+
+/* ── SECTION LABEL ── */
+.sec{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:var(--tx3);margin:20px 0 10px}
+
+/* ── ADD INPUT ── */
+.add-row{display:flex;gap:8px;margin-top:8px}
+.add-inp{
+  flex:1;padding:12px 16px;border-radius:100px;
+  background:rgba(255,255,255,.07);border:1px solid var(--brd);
+  color:var(--tx);font-size:15px;font-family:var(--f);outline:none;
+  -webkit-appearance:none;transition:border-color .2s;
+}
+.add-inp:focus{border-color:rgba(191,90,242,.4)}
+.add-inp::placeholder{color:var(--tx4)}
+.add-go{
+  width:46px;height:46px;border-radius:50%;border:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:700;cursor:pointer;flex-shrink:0;
+  transition:transform .14s;color:#fff;
+}
+.add-go:active{transform:scale(.88)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px;color:var(--tx3)}
+.empty .em{font-size:48px;margin-bottom:14px;opacity:.5}
+.empty p{font-size:14px;line-height:1.6}
+
+/* ── RANDOM RESULT ── */
+.rnd-card{
+  text-align:center;padding:36px 24px;
+  background:var(--glass);border:1px solid var(--brd);
+  border-radius:var(--r3);margin-bottom:16px;position:relative;overflow:hidden;
+}
+.rnd-glow{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:160px;height:160px;border-radius:50%;opacity:.15;filter:blur(40px);pointer-events:none}
+.rnd-tipo{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);margin-bottom:12px}
+.rnd-name{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px;line-height:1.2}
+.rnd-sub{font-size:14px;color:var(--tx3);margin-bottom:20px}
+.rnd-open{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 28px;border-radius:100px;
+  font-size:15px;font-weight:800;color:#000;cursor:pointer;
+  transition:all .14s;text-decoration:none;
+}
+.rnd-open:active{transform:scale(.95)}
+.rnd-otro{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px;border:1.5px dashed var(--brd2);
+  border-radius:var(--r2);cursor:pointer;
+  font-size:14px;font-weight:700;color:var(--tx3);
+  transition:all .14s;
+}
+.rnd-otro:active{background:var(--glass)}
+
+/* ── SPINNERS/LOADING ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.9}}
+.loading{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx3);padding:20px 0}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.1);border-top-color:var(--pur);animation:spin .7s linear infinite;flex-shrink:0}
+
+/* ── STATS WEEK ── */
+.week-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.ws{background:var(--glass);border:1px solid var(--brd);border-radius:var(--r2);padding:14px 10px;text-align:center}
+.ws-val{font-size:22px;font-weight:800;line-height:1;margin-bottom:3px}
+.ws-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tx3)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{display:none}
+
+/* ── BACK HEADER for sub-screens ── */
+.sub-hdr{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.sub-back{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--glass);border:1px solid var(--brd);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:var(--tx2);cursor:pointer;flex-shrink:0;
+}
+.sub-title{font-size:18px;font-weight:800;letter-spacing:-.3px}
+
+/* ── PLATFORM BADGE ── */
+.plat{font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px;background:rgba(255,255,255,.07);color:var(--tx3)}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);
+  backdrop-filter:blur(10px);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal-sheet{
+  width:100%;max-width:480px;background:#0F0F1A;
+  border-radius:24px 24px 0 0;border:1px solid var(--brd);
+  padding:20px 20px calc(var(--sab)+20px);
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.22,.1,.25,1);
+}
+.modal-overlay.show .modal-sheet{transform:translateY(0)}
+.modal-handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:0 auto 18px}
+.modal-title{font-size:18px;font-weight:800;letter-spacing:-.3px;margin-bottom:16px}
+
+/* ── FILTER CHIPS ── */
+.filters{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;-webkit-overflow-scrolling:touch}
+.fc{
+  flex-shrink:0;padding:8px 16px;border-radius:100px;
+  font-size:12px;font-weight:700;cursor:pointer;
+  background:var(--glass);border:1px solid var(--brd);color:var(--tx2);
+  transition:all .14s;
+}
+.fc.on{background:rgba(191,90,242,.15);border-color:rgba(191,90,242,.3);color:var(--pur)}
+.fc:active{transform:scale(.93)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ HOME ══ -->
+  <div id="screen-home" class="screen active">
+    <div class="topbar">
+      <a href="mobile.html" class="tb-back">‹</a>
+      <div class="tb-title">🎬 Ocio</div>
+      <div class="tb-stats" id="home-week-stats">—</div>
+    </div>
+
+    <!-- Tiempo disponible -->
+    <div class="sec">¿Cuánto tiempo tienes?</div>
+    <div style="display:flex;gap:7px;margin-bottom:20px" id="time-btns">
+      <div class="time-btn" onclick="selectTime(15)">15 min</div>
+      <div class="time-btn" onclick="selectTime(30)">30 min</div>
+      <div class="time-btn" onclick="selectTime(60)">1 hora</div>
+      <div class="time-btn" onclick="selectTime(120)">2h+</div>
+    </div>
+
+    <!-- Sugerencia principal -->
+    <div class="sec">Para ti ahora</div>
+    <div id="main-suggestion"></div>
+
+    <!-- Accesos rápidos -->
+    <div id="quick-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px"></div>
+
+    <!-- Últimas pelis pendientes -->
+    <div id="home-watchlist-preview"></div>
+  </div>
+
+  <!-- ══ YOUTUBE ══ -->
+  <div id="screen-youtube" class="screen">
+    <div class="topbar">
+      <div class="tb-back" onclick="goBack()">‹</div>
+      <div class="tb-title">📺 YouTube</div>
+      <div class="tb-stats" id="yt-count"></div>
+    </div>
+    <div class="filters" id="yt-filters"></div>
+    <div id="yt-channels"></div>
+    <div class="sec">Añadir canal</div>
+    <div class="add-row">
+      <input class="add-inp" id="yt-add-inp" placeholder="Nombre o URL del canal..."
+        onkeydown="if(event.key==='Enter')ytAddChannel()">
+      <div class="add-go" style="background:var(--red)" onclick="ytAddChannel()">+</div>
+    </div>
+  </div>
+
+  <!-- ══ PELIS ══ -->
+  <div id="screen-pelis" class="screen">
+    <div class="topbar">
+      <div class="tb-back" onclick="goBack()">‹</div>
+      <div class="tb-title">🎬 Pelis & Series</div>
+      <div class="tb-stats" id="mov-count"></div>
+    </div>
+    <div class="filters" id="mov-filters"></div>
+    <div id="mov-list"></div>
+    <div class="sec">Añadir</div>
+    <div class="add-row">
+      <input class="add-inp" id="mov-add-inp" placeholder="Título de la peli o serie..."
+        onkeydown="if(event.key==='Enter')movAdd()">
+      <div class="add-go" style="background:var(--pur)" onclick="movAdd()">+</div>
+    </div>
+  </div>
+
+  <!-- ══ PODCASTS ══ -->
+  <div id="screen-podcasts" class="screen">
+    <div class="topbar">
+      <div class="tb-back" onclick="goBack()">‹</div>
+      <div class="tb-title">🎙️ Podcasts</div>
+      <div class="tb-stats" id="pod-count"></div>
+    </div>
+    <div id="pod-list"></div>
+    <div class="sec">Añadir podcast</div>
+    <div class="add-row">
+      <input class="add-inp" id="pod-add-inp" placeholder="Nombre del podcast..."
+        onkeydown="if(event.key==='Enter')podAdd()">
+      <div class="add-go" style="background:var(--teal)" onclick="podAdd()">+</div>
+    </div>
+  </div>
+
+  <!-- ══ MÚSICA ══ -->
+  <div id="screen-musica" class="screen">
+    <div class="topbar">
+      <div class="tb-back" onclick="goBack()">‹</div>
+      <div class="tb-title">🎵 Música</div>
+      <div></div>
+    </div>
+    <div id="music-moods"></div>
+    <div class="sec">Tus playlists</div>
+    <div id="music-custom"></div>
+    <div class="add-row">
+      <input class="add-inp" id="mus-add-inp" placeholder="Nombre de la playlist..."
+        onkeydown="if(event.key==='Enter')musAdd()">
+      <div class="add-go" style="background:var(--blu)" onclick="musAdd()">+</div>
+    </div>
+  </div>
+
+  <!-- ══ JUEGOS ══ -->
+  <div id="screen-juegos" class="screen">
+    <div class="topbar">
+      <div class="tb-back" onclick="goBack()">‹</div>
+      <div class="tb-title">🎮 Juegos</div>
+      <div class="tb-stats" id="juegos-count"></div>
+    </div>
+    <div id="juegos-list"></div>
+    <div class="sec">Añadir juego</div>
+    <div class="add-row">
+      <input class="add-inp" id="juego-add-inp" placeholder="Nombre del juego..."
+        onkeydown="if(event.key==='Enter')juegoAdd()">
+      <div class="add-go" style="background:var(--grn)" onclick="juegoAdd()">+</div>
+    </div>
+  </div>
+
+  <!-- ══ HISTORIAL ══ -->
+  <div id="screen-historial" class="screen">
+    <div class="topbar">
+      <div class="tb-back" onclick="goBack()">‹</div>
+      <div class="tb-title">📊 Historial</div>
+      <div></div>
+    </div>
+    <div class="week-stats" id="hist-stats"></div>
+    <div id="hist-list"></div>
+  </div>
+
+  <!-- ══ RANDOM ══ -->
+  <div id="screen-random" class="screen">
+    <div class="topbar">
+      <div class="tb-back" onclick="goBack()">‹</div>
+      <div class="tb-title">🎲 Sorpréndeme</div>
+      <div></div>
+    </div>
+    <div id="random-content"></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="bn-item active" onclick="goScreen('home')" id="bn-home">
+    <div class="bn-icon">🏠</div>
+    <div class="bn-label">Inicio</div>
+  </div>
+  <div class="bn-item" onclick="goScreen('youtube')" id="bn-youtube">
+    <div class="bn-icon">📺</div>
+    <div class="bn-label">YouTube</div>
+  </div>
+  <div class="bn-item" onclick="goScreen('pelis')" id="bn-pelis">
+    <div class="bn-icon">🎬</div>
+    <div class="bn-label">Pelis</div>
+  </div>
+  <div class="bn-item" onclick="goScreen('podcasts')" id="bn-podcasts">
+    <div class="bn-icon">🎙️</div>
+    <div class="bn-label">Podcasts</div>
+  </div>
+  <div class="bn-item" onclick="goScreen('random')" id="bn-random">
+    <div class="bn-icon">🎲</div>
+    <div class="bn-label">Random</div>
+  </div>
+</div>
+
+<!-- ADD MOVIE MODAL -->
+<div class="modal-overlay" id="mov-modal" onclick="if(event.target===this)closeMov()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Añadir a watchlist</div>
+    <input class="add-inp" id="mov-title-inp" placeholder="Título..." style="width:100%;margin-bottom:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <input class="add-inp" id="mov-genre-inp" placeholder="Género...">
+      <input class="add-inp" id="mov-dur-inp" placeholder="Duración (min)" type="number">
+    </div>
+    <div style="margin-bottom:10px">
+      <div class="sec" style="margin-top:0;margin-bottom:8px">Plataforma</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap" id="plat-btns">
+        ${['Netflix','HBO Max','Prime','Disney+','Movistar+','Otra'].map(p=>`<div class="fc" onclick="selPlat('${p}')">${p}</div>`).join('')}
+      </div>
+    </div>
+    <button onclick="movConfirmAdd()" style="width:100%;padding:14px;border-radius:100px;background:var(--pur);border:none;color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:var(--f)">Añadir →</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// LIFEPILOT OCIO — Full app
+// ══════════════════════════════════════
+const GROQ = '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';
+const dk = () => new Date().toISOString().slice(0,10);
+const gls = (k,d) => { try{ const v=localStorage.getItem('lp_'+k); return v!==null?JSON.parse(v):d; }catch(e){return d} };
+const sls = (k,v) => localStorage.setItem('lp_'+k, JSON.stringify(v));
+
+// ══ DATA ══
+const YT_CHANNELS = [
+  {id:'rawroger', n:'RawRoger', u:'https://www.youtube.com/@RawRoger', desc:'Viajes en moto por el mundo', tag:'Viajes', color:'#E74C3C', img:'https://yt3.googleusercontent.com/ytc/AIdro_lNqW-wBnGJOSTfJMP3V6P7n3jw-H0hQs7q6Cua9nwFnw=s176-c-k-c0x00ffffff-no-rj'},
+  {id:'lethalcrysis', n:'Lethal Crysis', u:'https://www.youtube.com/@LethalCrysis', desc:'Zonas peligrosas y remotas', tag:'Viajes', color:'#1ABC9C', img:'https://yt3.googleusercontent.com/ytc/AIdro_nNF-_rFmyrFMWJxkqJxH7M2hUam4V7DDuKzpLllGAU_g=s176-c-k-c0x00ffffff-no-rj'},
+  {id:'ridemefive', n:'Ride Me Five', u:'https://www.youtube.com/@RideMeFive', desc:'Aventuras en moto con humor', tag:'Motor', color:'#F39C12', img:'https://yt3.googleusercontent.com/MHa_FGn9O5nEXxqOe_GHbf0aK1sMoJChFjk-j_bL-MvU6q9VbnLVR5E_vwQ4R_FMHZ2Wfqkv=s176-c-k-c0x00ffffff-no-rj'},
+  {id:'visualpolitik', n:'VisualPolitik', u:'https://www.youtube.com/@VisualPolitik', desc:'Geopolítica y relaciones internacionales', tag:'Geopolítica', color:'#3498DB', img:'https://yt3.googleusercontent.com/ytc/AIdro_lDAZhNT4GAtJBqRVfJQvjofkEXLmlr2z2CQFXAaKXCNu4=s176-c-k-c0x00ffffff-no-rj'},
+  {id:'academiaplay', n:'Academia Play', u:'https://www.youtube.com/@academiaplay', desc:'Historia universal animada', tag:'Historia', color:'#9B59B6', img:'https://yt3.googleusercontent.com/ytc/AIdro_m_nkaUEZBEMbGMFXD7EaTVcFH8bCm6fCmwd_DKYP8nXg=s176-c-k-c0x00ffffff-no-rj'},
+  {id:'memoriasdepez', n:'Memorias de Pez', u:'https://www.youtube.com/@MemoriasdePez', desc:'Documentales de historia', tag:'Historia', color:'#2ECC71'},
+];
+
+const PODCASTS_BASE = [
+  {id:'etm', n:'Entiende Tu Mente', u:'https://open.spotify.com/show/5BKLBMgDncqCJQrupXjgRl', desc:'Psicología cotidiana', color:'#1DB954', emoji:'🧠', dur:'~25 min'},
+  {id:'cdi', n:'Cosas de Internet', u:'https://open.spotify.com/show/3EIRhkj6FhGT3vIHCDvIEt', desc:'Tecnología y cultura digital', color:'#1DB954', emoji:'💻', dur:'~45 min'},
+  {id:'hep', n:'Historia de España', u:'https://open.spotify.com/search/historia%20espa%C3%B1a%20podcast', desc:'Historia contada bien', color:'#E74C3C', emoji:'🏰', dur:'~30 min'},
+  {id:'mvi', n:'Marc Vidal', u:'https://open.spotify.com/show/1kLvnCBxLvMvNJgm26JsTY', desc:'Economía y tendencias', color:'#F39C12', emoji:'📈', dur:'~35 min'},
+  {id:'inn', n:'Innova como puedas', u:'https://open.spotify.com/show/7KCJ3h5T5g4L6bBvLGzLV5', desc:'Emprendimiento y tecnología', color:'#9B59B6', emoji:'🚀', dur:'~40 min'},
+];
+
+const PLAYLISTS_BASE = [
+  {id:'train', n:'Entreno', u:'https://open.spotify.com/search/workout%20motivation%20playlist', emoji:'💪', desc:'Para cuando entrenas', color:'#E74C3C', mood:'energy'},
+  {id:'focus', n:'Concentración', u:'https://open.spotify.com/search/deep%20focus%20playlist', emoji:'🧘', desc:'Trabajo sin distracción', color:'#3498DB', mood:'focus'},
+  {id:'vibes', n:'Buenas vibras', u:'https://open.spotify.com/search/buenas%20vibras%20playlist', emoji:'😎', desc:'Para el día a día', color:'#F39C12', mood:'happy'},
+  {id:'night', n:'Noche tranquila', u:'https://open.spotify.com/search/chill%20night%20playlist', emoji:'🌙', desc:'Para relajarte', color:'#9B59B6', mood:'chill'},
+  {id:'clasic', n:'Clásicos españoles', u:'https://open.spotify.com/search/clasicos%20espanoles%20playlist', emoji:'🎸', desc:'Lo de siempre', color:'#2ECC71', mood:'nostalgia'},
+];
+
+// ══ STATE ══
+let curScreen = 'home';
+let selectedTime = null;
+let selPlatform = null;
+let ytFilter = 'Todos';
+let movFilter = 'Pendiente';
+
+// ══ NAVIGATION ══
+function goScreen(id, pushHistory=true){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+id)?.classList.add('active');
+  document.getElementById('bn-'+id)?.classList.add('active');
+  curScreen = id;
+  // Render content
+  const renders = {
+    home: renderHome,
+    youtube: renderYT,
+    pelis: renderPelis,
+    podcasts: renderPodcasts,
+    musica: renderMusica,
+    juegos: renderJuegos,
+    historial: renderHistorial,
+    random: renderRandom,
+  };
+  renders[id]?.();
+  window.scrollTo(0,0);
+}
+function goBack(){ goScreen('home') }
+
+// ══ TIME SELECTION ══
+function selectTime(mins){
+  selectedTime = mins;
+  document.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('sel'));
+  event.currentTarget.classList.add('sel');
+  renderSuggestion();
+}
+
+// ══ HOME ══
+function renderHome(){
+  renderWeekStats();
+  renderSuggestion();
+  renderQuickGrid();
+  renderWatchlistPreview();
+}
+
+function renderWeekStats(){
+  const el=document.getElementById('home-week-stats');if(!el)return;
+  const hist=gls('ocio_historial',[]);
+  const week=hist.filter(h=>{
+    const d=new Date(h.fecha);const now=new Date();
+    return (now-d)<7*24*3600*1000;
+  });
+  const tipos={yt:0,peli:0,pod:0,mus:0};
+  week.forEach(h=>{if(tipos[h.tipo]!==undefined)tipos[h.tipo]++});
+  const total=week.length;
+  if(!total){el.textContent='Empieza hoy';return}
+  const parts=[];
+  if(tipos.yt)parts.push(tipos.yt+'📺');
+  if(tipos.peli)parts.push(tipos.peli+'🎬');
+  if(tipos.pod)parts.push(tipos.pod+'🎙️');
+  el.textContent=parts.join(' ')||total+' registros';
+}
+
+function renderSuggestion(){
+  const el=document.getElementById('main-suggestion');if(!el)return;
+  const h=new Date().getHours();
+  const day=new Date().getDay();
+  const maxMins = selectedTime||120;
+
+  // Determine best suggestion
+  let sugg = null;
+
+  // Morning (6-9): podcast for commute
+  if(h>=6&&h<9&&maxMins>=15){
+    const pods=PODCASTS_BASE;
+    const pod=pods[Math.floor(Math.random()*pods.length)];
+    sugg={tipo:'podcast',emoji:'🎙️',color:'#1DB954',
+      kicker:'Para el trayecto de esta mañana',
+      title:pod.n, sub:pod.desc+'  ·  '+pod.dur,
+      cta:'Abrir en Spotify', ctaColor:'#1DB954', url:pod.u,
+      id:pod.id};
+  }
+  // Work hours (9-14): YouTube short
+  else if(h>=9&&h<14&&maxMins>=10){
+    const pending=getPendingMovies().filter(p=>!p.dur||p.dur>maxMins);
+    const yts=getAllYT();
+    const ch=yts[Math.floor(Math.random()*yts.length)];
+    if(ch) sugg={tipo:'yt',emoji:'📺',color:ch.color||'#E74C3C',
+      kicker:'Un vídeo mientras comes',
+      title:ch.n, sub:ch.desc,
+      cta:'Abrir YouTube', ctaColor:ch.color||'#E74C3C', url:ch.u,
+      id:ch.id||ch.n};
+  }
+  // Afternoon (14-19): flexible
+  else if(h>=14&&h<19){
+    if(maxMins>=90){
+      const pelis=getPendingMovies().filter(p=>!p.dur||p.dur<=maxMins);
+      if(pelis.length){
+        const p=pelis[0];
+        sugg={tipo:'peli',emoji:'🎬',color:'#9B59B6',
+          kicker:'Peli de tarde',
+          title:p.title,sub:(p.genre||'')+' · '+(p.platform||'')+(p.dur?' · '+p.dur+'min':''),
+          cta:'Marcar como vista', ctaColor:'#9B59B6', url:null, movId:p.id};
+      }
+    }
+    if(!sugg){
+      const yts=getAllYT();const ch=yts[Math.floor(Math.random()*yts.length)];
+      if(ch)sugg={tipo:'yt',emoji:'📺',color:ch.color||'#E74C3C',
+        kicker:'Canal que sueles ver',title:ch.n,sub:ch.desc,
+        cta:'Ver canal',ctaColor:ch.color||'#E74C3C',url:ch.u};
+    }
+  }
+  // Evening (19-21): podcast or music
+  else if(h>=19&&h<21&&maxMins>=20){
+    const pods=PODCASTS_BASE;
+    const pod=pods[Math.floor(Math.random()*pods.length)];
+    sugg={tipo:'podcast',emoji:'🎙️',color:'#1DB954',
+      kicker:'Para esta tarde',
+      title:pod.n,sub:pod.desc+' · '+pod.dur,
+      cta:'Escuchar',ctaColor:'#1DB954',url:pod.u};
+  }
+  // Night (21+): movie
+  else{
+    const pelis=getPendingMovies().filter(p=>!p.dur||p.dur<=maxMins);
+    if(pelis.length){
+      const p=pelis[0];
+      sugg={tipo:'peli',emoji:'🎬',color:'#9B59B6',
+        kicker:'Para esta noche',title:p.title,
+        sub:(p.genre||'')+' · '+(p.platform||'')+(p.dur?' · '+p.dur+'min':''),
+        cta:'Es la hora', ctaColor:'#9B59B6',url:null,movId:p.id};
+    }else{
+      const yts=getAllYT();const ch=yts[Math.floor(Math.random()*yts.length)];
+      if(ch)sugg={tipo:'yt',emoji:'📺',color:ch.color||'#E74C3C',
+        kicker:'Para esta noche',title:ch.n,sub:ch.desc,
+        cta:'Ver canal',ctaColor:ch.color||'#E74C3C',url:ch.u};
+    }
+  }
+
+  if(!sugg){
+    el.innerHTML=`<div class="sugg-hero" style="background:var(--glass);border:1px solid var(--brd)" onclick="goScreen('random')">
+      <div class="sugg-bg">🎲</div>
+      <div class="sugg-content">
+        <div class="sugg-kicker" style="color:var(--org)">¿Sin ideas?</div>
+        <div class="sugg-title">Sorpréndeme</div>
+        <div class="sugg-sub">Que LifePilot elija por ti</div>
+        <div class="sugg-cta" style="background:var(--org)">Ir al random →</div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML=`<div class="sugg-hero" style="background:linear-gradient(135deg,${sugg.color}22,rgba(255,255,255,.04))" 
+    onclick="${sugg.url?`window.open('${sugg.url}','_blank');logOcio('${sugg.tipo}','${sugg.title.replace(/'/g,"\\'")}')`:sugg.movId?`markMovWatched('${sugg.movId}');renderHome()`:'goScreen(\'random\')'}">
+    <div class="sugg-bg">${sugg.emoji}</div>
+    <div class="sugg-content">
+      <div class="sugg-kicker" style="color:${sugg.ctaColor}">${sugg.kicker}</div>
+      <div class="sugg-title">${sugg.title}</div>
+      <div class="sugg-sub">${sugg.sub}</div>
+      <div class="sugg-cta" style="background:${sugg.ctaColor}">${sugg.cta} →</div>
+    </div>
+  </div>`;
+}
+
+function renderQuickGrid(){
+  const el=document.getElementById('quick-grid');if(!el)return;
+  const items=[
+    {id:'youtube',emoji:'📺',label:'YouTube',color:'#E74C3C',
+     sub:getAllYT().length+' canales'},
+    {id:'pelis',emoji:'🎬',label:'Pelis',color:'#9B59B6',
+     sub:getPendingMovies().length+' pendientes'},
+    {id:'podcasts',emoji:'🎙️',label:'Podcasts',color:'#1DB954',
+     sub:PODCASTS_BASE.length+' podcasts'},
+    {id:'musica',emoji:'🎵',label:'Música',color:'#2980B9',
+     sub:'Moods · Playlists'},
+    {id:'juegos',emoji:'🎮',label:'Juegos',color:'#27AE60',
+     sub:getJuegos().filter(j=>!j.done).length+' pendientes'},
+    {id:'historial',emoji:'📊',label:'Historial',color:'#F39C12',
+     sub:gls('ocio_historial',[]).length+' registros'},
+  ];
+  el.innerHTML=items.map(i=>`
+    <div onclick="goScreen('${i.id}')" style="
+      padding:16px;background:var(--glass);border:1px solid var(--brd);
+      border-radius:var(--r2);cursor:pointer;position:relative;overflow:hidden;
+      transition:background .14s;
+    " ontouchstart="this.style.background='var(--glass2)'" ontouchend="this.style.background='var(--glass)'">
+      <div style="position:absolute;top:-15px;right:-15px;width:60px;height:60px;border-radius:50%;background:${i.color};opacity:.1;filter:blur(12px)"></div>
+      <div style="font-size:26px;margin-bottom:8px">${i.emoji}</div>
+      <div style="font-size:14px;font-weight:800;color:var(--tx);margin-bottom:3px">${i.label}</div>
+      <div style="font-size:11px;color:var(--tx3)">${i.sub}</div>
+    </div>`).join('');
+}
+
+function renderWatchlistPreview(){
+  const el=document.getElementById('home-watchlist-preview');if(!el)return;
+  const pending=getPendingMovies().slice(0,3);
+  if(!pending.length){el.innerHTML='';return}
+  let h=`<div class="sec">Watchlist pendiente</div>`;
+  pending.forEach(p=>{
+    h+=`<div class="mov-card">
+      <div class="mov-poster">${p.emoji||'🎬'}</div>
+      <div class="mov-info">
+        <div class="mov-title">${p.title}</div>
+        <div class="mov-meta">
+          ${p.platform?`<span class="plat">${p.platform}</span>`:''}
+          ${p.genre?`<span class="mov-tag" style="background:rgba(191,90,242,.12);color:var(--pur)">${p.genre}</span>`:''}
+          ${p.dur?`<span class="mov-tag" style="background:rgba(255,255,255,.06);color:var(--tx3)">${p.dur}min</span>`:''}
+        </div>
+        <div class="mov-actions">
+          <div class="mov-btn" style="background:var(--grn-d);color:var(--grn);border-color:rgba(52,208,88,.2)" 
+            onclick="markMovWatched('${p.id}');renderHome()">✓ Vista</div>
+          <div class="mov-btn" style="background:var(--glass);color:var(--tx3);border-color:var(--brd)"
+            onclick="goScreen('pelis')">Ver lista</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  el.innerHTML=h;
+}
+
+// ══ YOUTUBE ══
+function getAllYT(){
+  const custom=gls('ocio_yt_custom',[]);
+  return [...YT_CHANNELS,...custom];
+}
+
+function renderYT(){
+  const all=getAllYT();
+  const tags=['Todos',...new Set(all.map(c=>c.tag||'Otros'))];
+  // Filters
+  const filtersEl=document.getElementById('yt-filters');
+  if(filtersEl)filtersEl.innerHTML=tags.map(t=>`
+    <div class="fc ${ytFilter===t?'on':''}" onclick="ytFilter='${t}';renderYT()">${t}</div>`).join('');
+  // Count
+  const countEl=document.getElementById('yt-count');
+  if(countEl)countEl.textContent=all.length+' canales';
+  // List
+  const el=document.getElementById('yt-channels');if(!el)return;
+  const filtered=ytFilter==='Todos'?all:all.filter(c=>(c.tag||'Otros')===ytFilter);
+  if(!filtered.length){el.innerHTML='<div class="empty"><div class="em">📺</div><p>Sin canales en esta categoría</p></div>';return}
+  el.innerHTML=filtered.map((ch,i)=>{
+    const lastSeen=gls('yt_last_'+ch.id,null);
+    const daysSince=lastSeen?Math.floor((Date.now()-lastSeen)/(24*3600*1000)):null;
+    const sinceText=daysSince===0?'Visto hoy':daysSince===1?'Ayer':daysSince?`Hace ${daysSince} días`:'Nunca visto';
+    const init=ch.n.charAt(0).toUpperCase();
+    return`<div class="ch-card" onclick="ytOpen('${ch.id||i}','${ch.u.replace(/'/g,"\\'")}','${ch.n.replace(/'/g,"\\'")}')">
+      <div class="ch-accentbar" style="background:${ch.color||'#E74C3C'}"></div>
+      <div class="ch-avatar" style="background:${ch.color||'#E74C3C'}">
+        ${ch.img?`<img src="${ch.img}" onerror="this.style.display='none'">`:''}${init}
+      </div>
+      <div class="ch-info">
+        <div class="ch-name">${ch.n}</div>
+        <div class="ch-desc">${ch.desc||''}</div>
+        <div class="ch-since">${sinceText}</div>
+      </div>
+      <div class="ch-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+
+function ytOpen(id,url,name){
+  sls('yt_last_'+id, Date.now());
+  logOcio('yt',name);
+  window.open(url,'_blank');
+}
+
+function ytAddChannel(){
+  const v=document.getElementById('yt-add-inp')?.value?.trim();if(!v)return;
+  const custom=gls('ocio_yt_custom',[]);
+  const cols=['#E74C3C','#3498DB','#2ECC71','#F39C12','#9B59B6','#1ABC9C'];
+  custom.push({
+    id:'custom_'+Date.now(),n:v,
+    u:v.startsWith('http')?v:'https://www.youtube.com/results?search_query='+encodeURIComponent(v),
+    desc:'Canal añadido',tag:'Mis canales',
+    color:cols[custom.length%cols.length]
+  });
+  sls('ocio_yt_custom',custom);
+  document.getElementById('yt-add-inp').value='';
+  renderYT();
+}
+
+// ══ PELIS ══
+function getPendingMovies(){return getMovies().filter(m=>!m.done)}
+function getMovies(){return gls('ocio_movies',getDefaultMovies())}
+
+function getDefaultMovies(){
+  return[
+    {id:'m1',title:'El Mago del Kremlin',genre:'Drama',platform:'',dur:120,done:false,added:dk(),emoji:'🎭'},
+    {id:'m2',title:'La Vaquilla',genre:'Comedia',platform:'',dur:95,done:false,added:dk(),emoji:'😂'},
+  ];
+}
+
+function renderPelis(){
+  const all=getMovies();
+  const pending=all.filter(m=>!m.done);
+  const done=all.filter(m=>m.done);
+  // Filters
+  const filtersEl=document.getElementById('mov-filters');
+  if(filtersEl)filtersEl.innerHTML=['Pendiente','Vistas','Todas'].map(f=>`
+    <div class="fc ${movFilter===f?'on':''}" onclick="movFilter='${f}';renderPelis()">${f}</div>`).join('');
+  const countEl=document.getElementById('mov-count');
+  if(countEl)countEl.textContent=pending.length+' pendientes';
+  const el=document.getElementById('mov-list');if(!el)return;
+  const list=movFilter==='Pendiente'?pending:movFilter==='Vistas'?done:all;
+  if(!list.length){el.innerHTML='<div class="empty"><div class="em">🎬</div><p>Sin pelis aquí.<br>Añade algo abajo.</p></div>';return}
+  el.innerHTML=list.map(p=>renderMovCard(p)).join('');
+}
+
+function renderMovCard(p){
+  const EMOJIS={'Drama':'🎭','Comedia':'😂','Thriller':'😰','Terror':'👻','Acción':'💥','Ciencia ficción':'🚀','Documental':'🎥','Animación':'🎨','Romance':'❤️'};
+  const emoji=p.emoji||(p.genre?EMOJIS[p.genre]||'🎬':'🎬');
+  const stars=p.rating?'⭐'.repeat(p.rating):'';
+  return`<div class="mov-card" id="mov-${p.id}">
+    <div class="mov-poster" style="${p.done?'opacity:.5':''}">
+      ${emoji}
+    </div>
+    <div class="mov-info">
+      <div class="mov-title" style="${p.done?'text-decoration:line-through;opacity:.5':''}">
+        ${p.title}${stars?` <span style="font-size:11px">${stars}</span>`:''}
+      </div>
+      <div class="mov-meta">
+        ${p.platform?`<span class="plat">${p.platform}</span>`:''}
+        ${p.genre?`<span class="mov-tag" style="background:var(--pur-d);color:var(--pur)">${p.genre}</span>`:''}
+        ${p.dur?`<span class="mov-tag" style="background:var(--glass2);color:var(--tx3)">${p.dur}min</span>`:''}
+      </div>
+      ${!p.done?`<div class="mov-actions">
+        <div class="mov-btn" style="background:var(--grn-d);color:var(--grn);border-color:rgba(52,208,88,.2)" 
+          onclick="markMovWatched('${p.id}')">✓ Vista</div>
+        <div class="mov-btn" style="background:var(--red-d);color:var(--red);border-color:rgba(255,69,58,.2)"
+          onclick="delMov('${p.id}')">Borrar</div>
+      </div>`:`
+      <div class="mov-stars">
+        ${[1,2,3,4,5].map(s=>`<div class="mov-star" onclick="rateMov('${p.id}',${s})">${(p.rating||0)>=s?'⭐':'☆'}</div>`).join('')}
+      </div>`}
+    </div>
+  </div>`;
+}
+
+function movAdd(){
+  document.getElementById('mov-modal').classList.add('show');
+  document.getElementById('mov-add-inp').value='';
+  setTimeout(()=>document.getElementById('mov-title-inp')?.focus(),300);
+}
+function closeMov(){document.getElementById('mov-modal').classList.remove('show')}
+
+function selPlat(p){
+  selPlatform=p;
+  document.querySelectorAll('#plat-btns .fc').forEach(b=>{
+    b.classList.toggle('on',b.textContent===p);
+  });
+}
+
+function movConfirmAdd(){
+  const title=document.getElementById('mov-title-inp')?.value?.trim();if(!title)return;
+  const genre=document.getElementById('mov-genre-inp')?.value?.trim()||'';
+  const dur=parseInt(document.getElementById('mov-dur-inp')?.value)||null;
+  const movies=getMovies();
+  movies.unshift({id:'m'+Date.now(),title,genre,dur,platform:selPlatform||'',done:false,added:dk(),emoji:'🎬'});
+  sls('ocio_movies',movies);
+  closeMov();selPlatform=null;
+  document.getElementById('mov-title-inp').value='';
+  document.getElementById('mov-genre-inp').value='';
+  document.getElementById('mov-dur-inp').value='';
+  renderPelis();
+}
+
+function markMovWatched(id){
+  const movies=getMovies();
+  const m=movies.find(x=>x.id===id);
+  if(m){m.done=true;m.watchedDate=dk();sls('ocio_movies',movies);logOcio('peli',m.title)}
+  renderPelis();
+}
+function delMov(id){const m=getMovies().filter(x=>x.id!==id);sls('ocio_movies',m);renderPelis()}
+function rateMov(id,stars){const m=getMovies();const p=m.find(x=>x.id===id);if(p){p.rating=stars;sls('ocio_movies',m)}renderPelis()}
+
+// ══ PODCASTS ══
+function renderPodcasts(){
+  const custom=gls('ocio_podcasts_custom',[]);
+  const all=[...PODCASTS_BASE,...custom];
+  const countEl=document.getElementById('pod-count');
+  if(countEl)countEl.textContent=all.length+' podcasts';
+  const el=document.getElementById('pod-list');if(!el)return;
+  const lastPlayed=gls('pod_last_played',{});
+  el.innerHTML=all.map(p=>{
+    const lp=lastPlayed[p.id];
+    const daysSince=lp?Math.floor((Date.now()-lp)/(24*3600*1000)):null;
+    const badge=daysSince===null?'Nuevo':daysSince===0?'Hoy':daysSince<=3?`Hace ${daysSince}d`:'';
+    return`<div class="pod-card" onclick="podPlay('${p.id}','${p.u.replace(/'/g,"\\'")}','${p.n.replace(/'/g,"\\'")}')">
+      <div class="pod-ico" style="background:${p.color}18;border:1px solid ${p.color}33">${p.emoji||'🎙️'}</div>
+      <div class="pod-info">
+        <div class="pod-name">${p.n}</div>
+        <div class="pod-ep">${p.desc}</div>
+        <div class="pod-dur">${p.dur||''}${badge?` · <span style="color:var(--grn)">${badge}</span>`:''}</div>
+      </div>
+      <div class="pod-play" style="background:${p.color}22;color:${p.color}">▶</div>
+    </div>`;
+  }).join('');
+}
+
+function podPlay(id,url,name){
+  const last=gls('pod_last_played',{});
+  last[id]=Date.now();
+  sls('pod_last_played',last);
+  logOcio('pod',name);
+  window.open(url,'_blank');
+}
+function podAdd(){
+  const v=document.getElementById('pod-add-inp')?.value?.trim();if(!v)return;
+  const custom=gls('ocio_podcasts_custom',[]);
+  custom.push({id:'pod_'+Date.now(),n:v,u:'https://open.spotify.com/search/'+encodeURIComponent(v),
+    desc:'Podcast añadido',emoji:'🎙️',color:'#1ABC9C',dur:''});
+  sls('ocio_podcasts_custom',custom);
+  document.getElementById('pod-add-inp').value='';
+  renderPodcasts();
+}
+
+// ══ MÚSICA ══
+function renderMusica(){
+  const el=document.getElementById('music-moods');if(!el)return;
+  el.innerHTML=`<div class="sec" style="margin-top:0">Por estado de ánimo</div>`+
+  PLAYLISTS_BASE.map(p=>`
+    <div class="pl-card" onclick="musPlay('${p.u.replace(/'/g,"\\'")}','${p.n}')">
+      <div class="pl-ico" style="background:${p.color}18;border:1px solid ${p.color}33">${p.emoji}</div>
+      <div class="pl-info">
+        <div class="pl-name">${p.n}</div>
+        <div class="pl-desc">${p.desc}</div>
+      </div>
+      <div class="pl-open" style="color:rgba(29,185,84,.8)">Spotify ›</div>
+    </div>`).join('');
+  // Custom
+  const custom=gls('ocio_mus_custom',[]);
+  const customEl=document.getElementById('music-custom');
+  if(customEl&&custom.length){
+    customEl.innerHTML=custom.map(p=>`
+      <div class="pl-card" onclick="musPlay('${p.u.replace(/'/g,"\\'")}','${p.n}')">
+        <div class="pl-ico" style="background:rgba(44,126,255,.15);border:1px solid rgba(44,126,255,.2)">🎵</div>
+        <div class="pl-info"><div class="pl-name">${p.n}</div></div>
+        <div class="pl-open" style="color:rgba(29,185,84,.8)">Spotify ›</div>
+      </div>`).join('');
+  }
+}
+function musPlay(url,name){logOcio('mus',name);window.open(url,'_blank')}
+function musAdd(){
+  const v=document.getElementById('mus-add-inp')?.value?.trim();if(!v)return;
+  const custom=gls('ocio_mus_custom',[]);
+  custom.push({n:v,u:'https://open.spotify.com/search/'+encodeURIComponent(v)});
+  sls('ocio_mus_custom',custom);
+  document.getElementById('mus-add-inp').value='';
+  renderMusica();
+}
+
+// ══ JUEGOS ══
+function getJuegos(){return gls('ocio_juegos',[])}
+function renderJuegos(){
+  const all=getJuegos();
+  const countEl=document.getElementById('juegos-count');
+  if(countEl)countEl.textContent=all.filter(j=>!j.done).length+' pendientes';
+  const el=document.getElementById('juegos-list');if(!el)return;
+  if(!all.length){el.innerHTML='<div class="empty"><div class="em">🎮</div><p>Sin juegos.<br>Añade uno abajo.</p></div>';return}
+  const pending=all.filter(j=>!j.done);
+  const done=all.filter(j=>j.done);
+  let h='';
+  if(pending.length){
+    h+=`<div class="sec" style="margin-top:0">Pendientes</div>`;
+    pending.forEach(j=>{
+      const ri=all.indexOf(j);
+      h+=`<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:8px;background:var(--glass);border:1px solid var(--brd);border-radius:18px">
+        <span style="font-size:22px">🎮</span>
+        <div style="flex:1;font-size:15px;font-weight:700">${j.name}</div>
+        <div onclick="juegoToggle(${ri})" style="width:36px;height:36px;border-radius:50%;background:var(--grn-d);border:1px solid rgba(52,208,88,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--grn);font-size:16px">✓</div>
+        <div onclick="juegoDelete(${ri})" style="width:36px;height:36px;border-radius:50%;background:var(--glass2);border:1px solid var(--brd);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tx3);font-size:14px">✕</div>
+      </div>`;
+    });
+  }
+  if(done.length){
+    h+=`<div class="sec">Completados (${done.length})</div>`;
+    done.forEach(j=>{
+      const ri=all.indexOf(j);
+      h+=`<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:6px;background:var(--glass);border:1px solid var(--brd);border-radius:16px;opacity:.45">
+        <span style="font-size:20px">🎮</span>
+        <div style="flex:1;font-size:14px;color:var(--tx3);text-decoration:line-through">${j.name}</div>
+        <div onclick="juegoToggle(${ri})" style="font-size:12px;color:var(--tx3);cursor:pointer;padding:4px 8px">↩</div>
+        <div onclick="juegoDelete(${ri})" style="font-size:12px;color:var(--tx3);cursor:pointer;padding:4px 8px">✕</div>
+      </div>`;
+    });
+  }
+  el.innerHTML=h;
+}
+function juegoAdd(){
+  const v=document.getElementById('juego-add-inp')?.value?.trim();if(!v)return;
+  const list=getJuegos();list.unshift({name:v,done:false,added:dk()});
+  sls('ocio_juegos',list);document.getElementById('juego-add-inp').value='';renderJuegos();
+}
+function juegoToggle(i){const l=getJuegos();l[i].done=!l[i].done;if(l[i].done)logOcio('juego',l[i].name);sls('ocio_juegos',l);renderJuegos()}
+function juegoDelete(i){const l=getJuegos();l.splice(i,1);sls('ocio_juegos',l);renderJuegos()}
+
+// ══ HISTORIAL ══
+function logOcio(tipo, nombre){
+  const hist=gls('ocio_historial',[]);
+  hist.unshift({tipo,nombre,fecha:new Date().toISOString()});
+  sls('ocio_historial',hist.slice(0,200));
+}
+
+function renderHistorial(){
+  const hist=gls('ocio_historial',[]);
+  // Stats
+  const statsEl=document.getElementById('hist-stats');
+  if(statsEl){
+    const week=hist.filter(h=>(Date.now()-new Date(h.fecha))<7*24*3600*1000);
+    const tipos={yt:week.filter(h=>h.tipo==='yt').length,
+      peli:week.filter(h=>h.tipo==='peli').length,
+      pod:week.filter(h=>h.tipo==='pod').length};
+    statsEl.innerHTML=`
+      <div class="ws"><div class="ws-val" style="color:var(--red)">${tipos.yt}</div><div class="ws-lbl">📺 Vídeos</div></div>
+      <div class="ws"><div class="ws-val" style="color:var(--pur)">${tipos.peli}</div><div class="ws-lbl">🎬 Pelis</div></div>
+      <div class="ws"><div class="ws-val" style="color:var(--grn)">${tipos.pod}</div><div class="ws-lbl">🎙️ Podcasts</div></div>`;
+  }
+  const el=document.getElementById('hist-list');if(!el)return;
+  if(!hist.length){el.innerHTML='<div class="empty"><div class="em">📊</div><p>Sin historial todavía.<br>Empieza a usar Ocio.</p></div>';return}
+  const TYPE_ICONS={yt:'📺',peli:'🎬',pod:'🎙️',mus:'🎵',juego:'🎮'};
+  const card=`<div class="card" style="padding:4px 16px">`;
+  let html=card;
+  // Group by date
+  const byDate={};
+  hist.forEach(h=>{
+    const d=new Date(h.fecha).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+    if(!byDate[d])byDate[d]=[];
+    byDate[d].push(h);
+  });
+  let first=true;
+  Object.entries(byDate).slice(0,14).forEach(([date,items])=>{
+    if(!first)html+='</div>'+card;
+    first=false;
+    html+=`<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--tx3);padding:12px 0 4px">${date}</div>`;
+    items.forEach(item=>{
+      html+=`<div class="hist-item">
+        <div class="hist-ico">${TYPE_ICONS[item.tipo]||'🎬'}</div>
+        <div class="hist-info"><div class="hist-title">${item.nombre}</div></div>
+        <div class="hist-date">${new Date(item.fecha).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</div>
+      </div>`;
+    });
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ══ RANDOM ══
+function renderRandom(){
+  const el=document.getElementById('random-content');if(!el)return;
+  pickRandom(el);
+}
+
+function pickRandom(el){
+  const all=[];
+  getAllYT().forEach(ch=>all.push({tipo:'📺 YouTube',nombre:ch.n,url:ch.u,color:ch.color||'#E74C3C',emoji:'📺'}));
+  getPendingMovies().forEach(p=>all.push({tipo:'🎬 Peli pendiente',nombre:p.title,url:null,color:'#9B59B6',emoji:'🎬',movId:p.id}));
+  PODCASTS_BASE.forEach(p=>all.push({tipo:'🎙️ Podcast',nombre:p.n,url:p.u,color:'#1DB954',emoji:'🎙️'}));
+  PLAYLISTS_BASE.forEach(p=>all.push({tipo:'🎵 Música',nombre:p.n,url:p.u,color:p.color,emoji:'🎵'}));
+  getJuegos().filter(j=>!j.done).forEach(j=>all.push({tipo:'🎮 Juego pendiente',nombre:j.name,url:null,color:'#27AE60',emoji:'🎮'}));
+  if(!all.length){el.innerHTML='<div class="empty"><div class="em">🎲</div><p>Añade contenido primero</p></div>';return}
+  const pick=all[Math.floor(Math.random()*all.length)];
+  el.innerHTML=`
+    <div class="rnd-card" style="border-color:${pick.color}30">
+      <div class="rnd-glow" style="background:${pick.color}"></div>
+      <div style="font-size:52px;margin-bottom:12px">${pick.emoji}</div>
+      <div class="rnd-tipo">${pick.tipo}</div>
+      <div class="rnd-name">${pick.nombre}</div>
+      ${pick.url?`<a class="rnd-open" style="background:${pick.color}" href="${pick.url}" target="_blank"
+        onclick="logOcio('${pick.emoji}','${pick.nombre.replace(/'/g,"\\'")}')">Abrir ahora →</a>`:
+        pick.movId?`<div class="rnd-open" style="background:${pick.color}" 
+          onclick="markMovWatched('${pick.movId}');renderHome()">Marcar como vista ✓</div>`:''}
+    </div>
+    <div class="rnd-otro" onclick="pickRandom(document.getElementById('random-content'))">
+      🎲 &nbsp; Otra sugerencia
+    </div>
+    <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--tx4)">
+      Eligiendo entre ${all.length} opciones de tu contenido
+    </div>`;
+}
+
+// ══ MODAL PLATFORM HTML fix ══
+document.addEventListener('DOMContentLoaded',()=>{
+  const platBtns=document.getElementById('plat-btns');
+  if(platBtns)platBtns.innerHTML=['Netflix','HBO Max','Prime','Disney+','Movistar+','Otra']
+    .map(p=>`<div class="fc" onclick="selPlat('${p}')">${p}</div>`).join('');
+});
+
+// ══ INIT ══
+renderHome();
+</script>
+</body>
+</html>
