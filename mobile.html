@@ -1188,7 +1188,7 @@ html{-webkit-overflow-scrolling:touch}
       <input type="text" id="m-food-input" placeholder="🔍 leche hacendado, pollo, manzana..."
         style="flex:1;padding:12px 14px;border-radius:100px;background:var(--pill);border:1px solid var(--brd);color:var(--tx);font-size:15px;font-family:var(--f);outline:none"
         onkeydown="if(event.key==='Enter')mAddFood()"
-        oninput="if(this.value.length>2)mFoodSearch(this.value)">
+        oninput="mFoodSearchDebounced(this.value)">
       <button onclick="mAddFood()" style="width:44px;height:44px;border-radius:50%;background:var(--blu);border:none;color:#fff;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">🔍</button>
     </div>
     <!-- Results -->
@@ -2336,10 +2336,21 @@ function mobExCheckProgression(exId){
 }
 
 // ── AI COACH ──
-async function mobExGetAICoach(exId){
+async function mobExGetAICoach(exId,force=false){
   const el=document.getElementById('ai-'+exId);if(!el)return;
   const ex=PROGRAMA[mobExCurDay]?.ejercicios?.find(e=>e.id===exId);if(!ex)return;
   const btn=document.querySelector(`#card-${exId} .ai-coach-btn`);
+  
+  // 7-day cache check
+  const cacheKey='coach_'+exId;
+  const cached=JSON.parse(localStorage.getItem('lp_groq_'+cacheKey)||'null');
+  if(!force && cached && cached._ts && (Date.now()-cached._ts)<7*86400000){
+    el.style.display='block';
+    el.innerHTML=`<div style="font-size:13px;color:var(--tx2);line-height:1.65">${cached.data}<div style="font-size:10px;color:var(--tx3);margin-top:6px;font-style:italic">💾 Guardado · <span style="cursor:pointer;text-decoration:underline" onclick="mobExGetAICoach('${exId}',true)">Refrescar</span></div></div>`;
+    if(btn){btn.textContent='🤖 Actualizar consejo';btn.disabled=false}
+    return;
+  }
+  
   if(btn){btn.textContent='🤖 Analizando...';btn.disabled=true}
   el.style.display='block';
   el.innerHTML='<div style="color:var(--tx3);font-size:13px">Consultando al coach IA...</div>';
@@ -2365,16 +2376,20 @@ Responde en español, directo, como un entrenador real. Sin listas ni bullets, t
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:300,temperature:0.4,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:180,temperature:0.4,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){
-      const errTxt=res.status===401?'⚠️ API key de Groq caducada. Actualiza la key en el código.':'Error '+res.status;
+      const errBody=await res.text();
+      console.error('Groq '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'';
     el.innerHTML=`<div style="font-size:13px;color:var(--tx2);line-height:1.65">${txt}</div>`;
     if(btn){btn.textContent='🤖 Actualizar consejo IA';btn.disabled=false}
+  
+    try{localStorage.setItem('lp_groq_'+cacheKey,JSON.stringify({_ts:Date.now(),data:txt}));}catch(e){}
   }catch(e){
     el.innerHTML='<div style="font-size:12px;color:var(--red)">Error al conectar. Verifica tu conexión.</div>';
     if(btn){btn.textContent='🤖 Analizar mi técnica con IA';btn.disabled=false}
@@ -2448,10 +2463,12 @@ async function mobExFinishWorkout(){
 Escribe un mensaje de cierre motivador y ÚTIL en 2-3 frases. Incluye: qué hacer las próximas horas para maximizar la recuperación (proteína, agua, sueño). Sé específico y personal. Nada de frases vacías de gym.`;
       const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
         method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-        body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:200,temperature:0.5,messages:[{role:'user',content:prompt}]})
+        body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:150,temperature:0.5,messages:[{role:'user',content:prompt}]})
       });
       if(!res.ok){
-      const errTxt=res.status===401?'⚠️ API key de Groq caducada. Actualiza la key en el código.':'Error '+res.status;
+      const errBody=await res.text();
+      console.error('Groq '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -2717,9 +2734,11 @@ async function mGenBriefing(force=false){
   if(bodyEl)bodyEl.innerHTML='<span style="color:var(--tx3)">Generando briefing...</span>';
   const prompt='Eres el asistente personal de Daniel (35 años, Pedrola). Datos de hoy: '+JSON.stringify(ctx)+'. Escribe un resumen directo y útil en exactamente 2 frases completas (sin cortar). Luego 2-3 pills de acción. IMPORTANTE: las frases deben estar COMPLETAS, sin puntos suspensivos ni cortes. SOLO JSON: {"resumen":"2 frases completas aquí, sin HTML","pills":[{"icon":"emoji","texto":"texto corto","seccion":"nutricion|tareas|diario|kira"}]}';
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:300,temperature:0.4,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:200,temperature:0.4,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
-      const errTxt=res.status===401?'⚠️ API key de Groq caducada. Actualiza la key en el código.':'Error '+res.status;
+      const errBody=await res.text();
+      console.error('Groq '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -2747,9 +2766,11 @@ async function mGenCoach(){
   for(let i=6;i>=0;i--){const dt=new Date(now);dt.setDate(dt.getDate()-i);const k=dt.toISOString().slice(0,10);const nutCheck=gls('nutri_'+k,{});const nutDone=NI.filter(x=>nutCheck[x.id]).length;const foodLog=gls('food_log_'+k,[]);let prot=0;foodLog.forEach(e=>{prot+=e.prot||0});const diario=gls('diary_'+k,null);const agua=gls('water_'+k,0);dias.push({nutDone,prot:Math.round(prot),mood:diario?.mood||null,aguaMl:agua})}
   const profile=getDanielProfileSummary();const profileCtx=profileToGroqContext(profile);const prompt='Eres el coach personal de Daniel. HISTORIAL ACUMULADO:\n'+profileCtx+'\n\nDATOS SEMANA ACTUAL: '+JSON.stringify(dias)+'. Genera 3-4 insights concretos. SOLO JSON: {"insights":[{"icon":"...","tipo":"logro|alerta|consejo","titulo":"...","descripcion":"1-2 frases","badge":"..."}],"recomendacion_semana":"..."}';
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:500,temperature:0.3,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.3,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
-      const errTxt=res.status===401?'⚠️ API key de Groq caducada. Actualiza la key en el código.':'Error '+res.status;
+      const errBody=await res.text();
+      console.error('Groq '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -2770,7 +2791,9 @@ async function mGenPatrones(){
   try{
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.2,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
-      const errTxt=res.status===401?'⚠️ API key de Groq caducada. Actualiza la key en el código.':'Error '+res.status;
+      const errBody=await res.text();
+      console.error('Groq '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -2905,9 +2928,11 @@ async function mGenPredicciones(profile){
   const avgKcal=dias7.length?Math.round(dias7.reduce((a,d)=>a+d.kcal,0)/dias7.length):0;
   const prompt='Coach nutrición deportiva. Predicciones para Daniel (35 años, recomposición). Datos: proteína '+profile.protMedia+'g/día, agua '+(profile.aguaMedia/1000).toFixed(1)+'L, peso '+profile.pesoActual+'kg tendencia '+profile.tendencia+'kg/sem, déficit medio kcal '+(2100-avgKcal)+'/día, '+(profile.pctProtOk)+'% días con objetivo proteína. SOLO JSON: {"predicciones":[{"emoji":"...","titulo":"predicción corta","valor":"ej: -0.3kg","plazo":"esta semana","descripcion":"cómo","accion":"qué hacer"}],"resumen":"frase estado actual"}';
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.2,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:350,temperature:0.2,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
-      const errTxt=res.status===401?'⚠️ API key de Groq caducada. Actualiza la key en el código.':'Error '+res.status;
+      const errBody=await res.text();
+      console.error('Groq '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -3132,7 +3157,7 @@ Genera un análisis de coach real. Conecta lo que dice con sus datos reales. Sé
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:250,temperature:0.4,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:200,temperature:0.4,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
     const analysis = data.choices?.[0]?.message?.content?.trim()||'';
@@ -3893,6 +3918,12 @@ function mRemoveFood(i){
   log.splice(i,1);sls('food_log_'+d,log);mRenderMacros();
 }
 
+let _mFoodTimer=null;
+function mFoodSearchDebounced(val){
+  clearTimeout(_mFoodTimer);
+  if(!val||val.length<3){const r=document.getElementById('mob-food-results');if(r)r.innerHTML='';return}
+  _mFoodTimer=setTimeout(()=>mFoodSearch(val),600);
+}
 async function mFoodSearch(query){
   const resEl=document.getElementById('m-food-results');
   if(!resEl)return;
@@ -3905,7 +3936,9 @@ async function mFoodSearch(query){
     const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&action=process&json=1&page_size=6&lc=es&cc=es&fields=${fields}&sort_by=unique_scans_n`;
     const res=await fetch(url,{headers:{'User-Agent':'LifePilot/2.0'}});
     if(!res.ok){
-      const errTxt=res.status===401?'⚠️ API key de Groq caducada. Actualiza la key en el código.':'Error '+res.status;
+      const errBody=await res.text();
+      console.error('Groq '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -3932,13 +3965,24 @@ async function mFoodSearch(query){
     resEl.innerHTML=`<div style="font-size:12px;color:var(--tx2);padding:8px;display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pur);animation:sdpulse .8s infinite"></span>Consultando IA nutricionista...</div>`;
     try{
       const prompt='Nutricionista experto. Busca: "'+query+'". Genera 3 resultados con macros POR 100G productos españoles. SOLO JSON: [{"nombre":"...","marca":"...","kcal_100g":n,"prot_100g":n,"carbs_100g":n,"grasas_100g":n,"porcion_tipica":"..."}]';
-      const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.1,messages:[{role:'user',content:prompt}]})});
+      // Cache check 30 days
+      const _fkey='mfood_'+(query||'').toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,40);
+      const _fcached=JSON.parse(localStorage.getItem('lp_groq_'+_fkey)||'null');
+      let res, data;
+      if(_fcached && _fcached._ts && (Date.now()-_fcached._ts)<30*86400000){
+        data={choices:[{message:{content:JSON.stringify(_fcached.data)}}]};
+        res={ok:true};
+      } else {
+        res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:250,temperature:0.1,messages:[{role:'user',content:prompt}]})});
       if(!res.ok){
-      const errTxt=res.status===401?'⚠️ API key de Groq caducada. Actualiza la key en el código.':'Error '+res.status;
+      const errBody=await res.text();
+      console.error('Groq '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
-    const data=await res.json();
+    const data=await res.json();}
       const groqItems=JSON.parse((data.choices?.[0]?.message?.content||'[]').replace(/```json|```/g,'').trim());
+      if(!_fcached){try{localStorage.setItem('lp_groq_'+_fkey,JSON.stringify({_ts:Date.now(),data:groqItems}));}catch(e){}}
       const groqRes=groqItems.map((item,i)=>({name:item.nombre||query,brand:item.marca||'',img:null,kcal100:Math.round(item.kcal_100g||0),prot100:+(item.prot_100g||0).toFixed(1),carbs100:+(item.carbs_100g||0).toFixed(1),grasas100:+(item.grasas_100g||0).toFixed(1),serving:item.porcion_tipica||null,servingQty:100,src:'groq'}));
       results=[...results,...groqRes];
     }catch(e){}
@@ -3972,10 +4016,12 @@ async function mCalcWithGroq(query){
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:300,temperature:0.1,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:200,temperature:0.1,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){
-      const errTxt=res.status===401?'⚠️ API key de Groq caducada. Actualiza la key en el código.':'Error '+res.status;
+      const errBody=await res.text();
+      console.error('Groq '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
