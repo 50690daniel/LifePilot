@@ -384,6 +384,163 @@ body::before{
 .section-header .sh-icon{font-size:24px}
 .section-header .sh-title{font-size:17px;font-weight:700;color:var(--tx)}
 .section-header .sh-sub{font-size:12px;color:var(--tx3);margin-top:1px}
+
+/* ═══════════════════════════════════════════════════════
+   DESKTOP RESPONSIVE — applies on tablets & desktops 
+   ═══════════════════════════════════════════════════════ */
+@media (min-width: 768px){
+  #app{
+    max-width: 1100px;
+    padding: 0 32px calc(var(--sab) + 40px);
+  }
+  
+  .top-bar{
+    padding: 32px 0 28px;
+  }
+  
+  .top-title{
+    font-size: 28px !important;
+  }
+  
+  .top-back{
+    font-size: 24px !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+  
+  .main-tabs{
+    max-width: 380px;
+    margin: 0 auto 28px;
+  }
+  
+  .day-strip{
+    justify-content: center;
+    gap: 12px !important;
+    margin-bottom: 28px;
+  }
+  
+  .day-pill{
+    min-width: 88px !important;
+    padding: 14px 18px !important;
+  }
+  
+  .day-pill .day-num{
+    font-size: 22px !important;
+  }
+  
+  .week-summary{
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 14px !important;
+    max-width: 700px;
+    margin: 0 auto 24px;
+  }
+  
+  /* Section header bigger on desktop */
+  .section-header{
+    padding: 20px !important;
+  }
+  .sh-icon{
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 26px !important;
+  }
+  .sh-title{
+    font-size: 18px !important;
+  }
+  .sh-sub{
+    font-size: 13px !important;
+  }
+  
+  /* Exercise cards in 2-column grid on desktop */
+  #workout-content{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  
+  /* When card is collapsed, allow 2 columns */
+  #workout-content > .ex-card:not(.active-card){
+    /* keep 1 col for now, easier reading */
+  }
+  
+  .ex-card{
+    border-radius: 18px !important;
+  }
+  
+  .ex-header{
+    padding: 18px 20px !important;
+  }
+  
+  .ex-name{
+    font-size: 17px !important;
+  }
+  
+  .ex-body{
+    padding: 0 20px 20px !important;
+  }
+  
+  /* GIF wrapper centered with max width on desktop */
+  .ex-gif-wrap{
+    max-width: 400px;
+    margin: 0 auto 16px !important;
+  }
+  
+  /* Sets tracker more spacious */
+  .sets-tracker{
+    padding: 16px !important;
+  }
+  
+  .set-row{
+    padding: 10px 12px !important;
+  }
+  
+  .set-input{
+    width: 64px !important;
+    padding: 7px 10px !important;
+    font-size: 13px !important;
+  }
+  
+  /* Buttons bigger */
+  .ai-coach-btn,
+  .finish-btn{
+    padding: 14px 18px !important;
+    font-size: 14px !important;
+  }
+  
+  /* Empty state */
+  .empty-state{
+    padding: 60px 30px !important;
+  }
+  .em-icon{
+    font-size: 72px !important;
+  }
+  .empty-state p{
+    font-size: 16px !important;
+    max-width: 480px;
+    margin: 0 auto !important;
+  }
+  
+  /* Rest timer in corner instead of bottom-center */
+  .rest-timer{
+    bottom: 32px !important;
+    right: 32px !important;
+    left: auto !important;
+    max-width: 280px;
+  }
+  
+  /* History/program tabs */
+  #tab-historial, #tab-programa{
+    max-width: 800px;
+    margin: 0 auto;
+  }
+}
+
+/* Wider screens — give even more breathing room */
+@media (min-width: 1200px){
+  #app{
+    max-width: 1200px;
+  }
+}
 </style>
 </head>
 <body>
@@ -392,7 +549,7 @@ body::before{
 
   <!-- TOP BAR -->
   <div class="top-bar">
-    <a href="mobile.html" class="top-back">‹</a>
+    <a href="javascript:void(0)" onclick="goBackSmart()" class="top-back">‹</a>
     <div class="top-title">💪 Ejercicios</div>
     <div class="top-badge" id="top-streak"></div>
   </div>
@@ -454,6 +611,20 @@ body::before{
 </div>
 
 <script>
+
+function goBackSmart(){
+  // Detect if we came from desktop (index.html) or mobile.html based on viewport
+  if(document.referrer && document.referrer.includes('mobile.html')){
+    location.href = 'mobile.html';
+  } else if(document.referrer && document.referrer.includes('index.html')){
+    location.href = 'index.html';
+  } else if(window.innerWidth >= 768){
+    location.href = 'index.html';
+  } else {
+    location.href = 'mobile.html';
+  }
+}
+
 function getAIKey(){return localStorage.getItem('lp_ai_key')||''}
 function getAIProvider(){return localStorage.getItem('lp_ai_provider')||'gemini'}
 function hasAIKey(){return getAIKey().length>10}

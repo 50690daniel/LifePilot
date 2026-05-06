@@ -153,7 +153,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 <div id="sidebar">
   <div class="sb-hdr">
     <div class="sb-logo">🎬 Ocio</div>
-    <a href="index.html" class="sb-back">← LifePilot</a>
+    <a href="javascript:void(0)" onclick="goBackSmartOcio()" class="sb-back">← LifePilot</a>
   </div>
   <div class="sb-sec">Contenido</div>
   <div class="sb-item on" id="sbi-home" onclick="go('home')"><span class="sb-ico">🏠</span>Para ti ahora</div>
@@ -181,7 +181,7 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 
 <!-- MOBILE SCREENS -->
 <div id="ms-home" class="mob-screen on">
-  <div class="mob-top"><a href="mobile.html" class="mob-back">‹</a><div class="mob-ttl">🎬 Ocio</div><div class="mob-stat" id="mob-ws">—</div></div>
+  <div class="mob-top"><a href="javascript:void(0)" onclick="goBackSmartOcio()" class="mob-back">‹</a><div class="mob-ttl">🎬 Ocio</div><div class="mob-stat" id="mob-ws">—</div></div>
   <div id="m-home"></div>
 </div>
 <div id="ms-youtube" class="mob-screen">
@@ -224,6 +224,18 @@ html,body{height:100%;background:var(--bg);font-family:var(--font);color:var(--t
 </div>
 
 <script>
+function goBackSmartOcio(){
+  if(document.referrer && document.referrer.includes('mobile.html')){
+    location.href = 'mobile.html';
+  } else if(document.referrer && document.referrer.includes('index.html')){
+    location.href = 'index.html';
+  } else if(window.innerWidth >= 768){
+    location.href = 'index.html';
+  } else {
+    location.href = 'mobile.html';
+  }
+}
+
 const gls=(k,d)=>{try{const v=localStorage.getItem('lp_'+k);return v!==null?JSON.parse(v):d}catch(e){return d}};
 const sls=(k,v)=>localStorage.setItem('lp_'+k,JSON.stringify(v));
 const dk=()=>new Date().toISOString().slice(0,10);
