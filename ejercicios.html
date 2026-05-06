@@ -454,10 +454,14 @@ body::before{
 </div>
 
 <script>
+function getAIKey(){return localStorage.getItem('lp_ai_key')||''}
+function getAIProvider(){return localStorage.getItem('lp_ai_provider')||'gemini'}
+function hasAIKey(){return getAIKey().length>10}
+
 // ═══════════════════════════════════════════
 // LIFEPILOT EJERCICIOS — Sistema completo
 // ═══════════════════════════════════════════
-const GROQ_KEY='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';
+const GROQ_KEY=''; // Now uses getAIKey() from localStorage
 const EX_DB_BASE='https://exercisedb.io/api/v2/exercises';
 
 // ── Storage helpers (mismo prefijo que LifePilot) ──
@@ -1162,10 +1166,10 @@ Da un consejo MUY ESPECÍFICO y PRÁCTICO en 3-4 frases sobre:
 
 Responde en español, directo, como un entrenador real. Sin listas ni bullets, texto continuo.`;
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:300,temperature:0.4,messages:[{role:'user',content:prompt}]})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
+      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.3-70b-versatile':'gemini-2.5-flash'),max_tokens:300,temperature:0.4,messages:[{role:'user',content:prompt}]})
     });
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'';
@@ -1242,9 +1246,9 @@ async function finishWorkout(){
       const prompt=`Entrenador personal. Daniel ha completado su entrenamiento de ${prog.tipo} (${prog.grupos.join(', ')}). Ha hecho ${totalSeries} series en total. Peso máximo usado: ${maxPeso}kg. Lleva entrenando poco tiempo con mancuernas en casa, objetivo: recomposición corporal.
 
 Escribe un mensaje de cierre motivador y ÚTIL en 2-3 frases. Incluye: qué hacer las próximas horas para maximizar la recuperación (proteína, agua, sueño). Sé específico y personal. Nada de frases vacías de gym.`;
-      const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-        body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:200,temperature:0.5,messages:[{role:'user',content:prompt}]})
+      const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
+        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
+        body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:200,temperature:0.5,messages:[{role:'user',content:prompt}]})
       });
       const data=await res.json();
       aiEl.innerHTML='<div style="font-size:14px;line-height:1.65">'+( data.choices?.[0]?.message?.content||'')+'</div>';

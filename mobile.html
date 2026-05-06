@@ -1422,6 +1422,28 @@ html{-webkit-overflow-scrolling:touch}
     <div></div>
   </div>
 
+  <!-- API KEY IA -->
+  <div class="sec-label">🤖 IA — API Key</div>
+  <div class="card" style="padding:14px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+      <select id="m-ai-provider" onchange="mSaveAIProvider()" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--tx);font-size:13px;font-weight:600;flex:1">
+        <option value="gemini">Gemini (recomendado)</option>
+        <option value="groq">Groq (Llama)</option>
+      </select>
+      <span id="m-ai-key-status" style="font-size:10px;font-weight:700;padding:5px 9px;border-radius:10px;background:rgba(255,255,255,.08);color:var(--tx3)">—</span>
+    </div>
+    <input type="password" id="m-ai-key-input" placeholder="Pega tu API key aquí..." style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--tx);font-size:13px;font-family:monospace;box-sizing:border-box;margin-bottom:10px" oninput="document.getElementById('m-ai-key-save').style.display='inline-block'">
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="m-ai-key-save" onclick="mSaveAIKey()" style="display:none;padding:9px 16px;border-radius:8px;background:var(--pur);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">💾 Guardar</button>
+      <button onclick="mClearAIKey()" style="padding:9px 14px;border-radius:8px;background:transparent;color:var(--red);border:1px solid var(--red);font-size:12px;font-weight:600;cursor:pointer">Borrar</button>
+      <span id="m-ai-key-msg" style="font-size:11px;color:var(--grn);margin-left:auto"></span>
+    </div>
+    <div style="font-size:11px;color:var(--tx3);margin-top:10px;line-height:1.5">
+      Crea key gratis: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--pur)">aistudio.google.com/apikey</a> (Gemini) o <a href="https://console.groq.com/keys" target="_blank" style="color:var(--pur)">console.groq.com/keys</a> (Groq).<br>
+      <em>La key solo vive en tu navegador.</em>
+    </div>
+  </div>
+
   <!-- NOTIFICACIONES -->
   <div class="sec-label">🔔 Notificaciones</div>
   <div class="card" id="notif-card">
@@ -1512,7 +1534,11 @@ html{-webkit-overflow-scrolling:touch}
 const MACRO_TARGETS={laborable:{kcal:1950,prot:150,carbs:185,grasas:62,label:'Laborable',color:'var(--blu)'},padel:{kcal:2250,prot:155,carbs:235,grasas:65,label:'Pádel',color:'var(--org)'},descanso:{kcal:1800,prot:150,carbs:155,grasas:65,label:'Descanso',color:'var(--pur)'}};
 const FOOD_DB={'huevo':{kcal:70,prot:6,carbs:0.5,grasas:5},'pechuga':{kcal:110,prot:23,carbs:0,grasas:1.5},'pavo':{kcal:109,prot:22,carbs:0,grasas:2},'jamon york':{kcal:107,prot:15,carbs:2,grasas:4},'salmon':{kcal:208,prot:20,carbs:0,grasas:13},'atun':{kcal:130,prot:28,carbs:0,grasas:1},'yogur griego':{kcal:100,prot:10,carbs:4,grasas:5},'avena':{kcal:380,prot:13,carbs:65,grasas:7},'arroz':{kcal:360,prot:7,carbs:78,grasas:1},'pasta':{kcal:350,prot:12,carbs:71,grasas:2},'pan':{kcal:80,prot:3,carbs:15,grasas:1},'platano':{kcal:90,prot:1,carbs:22,grasas:0},'frutos secos':{kcal:175,prot:5,carbs:5,grasas:16},'lomo':{kcal:145,prot:21,carbs:0,grasas:6},'ternera':{kcal:180,prot:20,carbs:0,grasas:10},'merluza':{kcal:90,prot:18,carbs:0,grasas:1.5}};
 let nutDayType=(()=>{const d=new Date().getDay();return d===1||d===3?'padel':d===6||d===0?'descanso':'laborable'})();
-const GROQ_KEY='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';
+// AI key from localStorage (configured in Settings)
+function getAIKey(){return localStorage.getItem('lp_ai_key')||''}
+function getAIProvider(){return localStorage.getItem('lp_ai_provider')||'gemini'}
+function hasAIKey(){return getAIKey().length > 10}
+const GROQ_KEY=''; // Legacy
 const NI=[
   {id:'desayuno',t:'Bocadillo de pavo / jamón york',s:'Desayuno — ~300 kcal · 22g prot'},
   {id:'frutos',t:'Puñado de frutos secos (30g)',s:'Media mañana — 175 kcal · 16g grasa'},
@@ -2373,10 +2399,10 @@ Da un consejo MUY ESPECÍFICO y PRÁCTICO en 3-4 frases sobre:
 
 Responde en español, directo, como un entrenador real. Sin listas ni bullets, texto continuo.`;
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:180,temperature:0.4,messages:[{role:'user',content:prompt}]})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
+      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:180,temperature:0.4,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){
       const errBody=await res.text();
@@ -2461,9 +2487,9 @@ async function mobExFinishWorkout(){
       const prompt=`Entrenador personal. Daniel ha completado su entrenamiento de ${prog.tipo} (${prog.grupos.join(', ')}). Ha hecho ${totalSeries} series en total. Peso máximo usado: ${maxPeso}kg. Lleva entrenando poco tiempo con mancuernas en casa, objetivo: recomposición corporal.
 
 Escribe un mensaje de cierre motivador y ÚTIL en 2-3 frases. Incluye: qué hacer las próximas horas para maximizar la recuperación (proteína, agua, sueño). Sé específico y personal. Nada de frases vacías de gym.`;
-      const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-        body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:150,temperature:0.5,messages:[{role:'user',content:prompt}]})
+      const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
+        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
+        body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:150,temperature:0.5,messages:[{role:'user',content:prompt}]})
       });
       if(!res.ok){
       const errBody=await res.text();
@@ -2668,7 +2694,7 @@ function doAdd(){
 }
 
 // ===== IA MOBILE =====
-const GROQ_KEY_M='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';
+const GROQ_KEY_M=''; // Legacy - now uses getAIKey()
 
 // ══════════════════════════════════════════════════════
 // SISTEMA DE MEMORIA — LifePilot aprende sobre Daniel
@@ -2731,10 +2757,14 @@ async function mGenBriefing(force=false){
   const greet=h<14?'Buenos días, Daniel':h<21?'Buenas tardes':'Buenas noches, Daniel';
   const greetEl=document.getElementById('m-brief-greet');if(greetEl)greetEl.textContent=greet;
   const bodyEl=document.getElementById('m-brief-body');
+  if(!hasAIKey()){
+    if(bodyEl)bodyEl.innerHTML='<span style="color:var(--tx2);font-size:13px">🔑 Configura tu API key en <strong onclick="go(\'ajustes\')" style="color:var(--pur);text-decoration:underline">Ajustes</strong> para activar el briefing IA.</span>';
+    return;
+  }
   if(bodyEl)bodyEl.innerHTML='<span style="color:var(--tx3)">Generando briefing...</span>';
   const prompt='Eres el asistente personal de Daniel (35 años, Pedrola). Datos de hoy: '+JSON.stringify(ctx)+'. Escribe un resumen directo y útil en exactamente 2 frases completas (sin cortar). Luego 2-3 pills de acción. IMPORTANTE: las frases deben estar COMPLETAS, sin puntos suspensivos ni cortes. SOLO JSON: {"resumen":"2 frases completas aquí, sin HTML","pills":[{"icon":"emoji","texto":"texto corto","seccion":"nutricion|tareas|diario|kira"}]}';
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:200,temperature:0.4,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:200,temperature:0.4,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
       const errBody=await res.text();
       console.error('Groq '+res.status+':',errBody);
@@ -2766,7 +2796,7 @@ async function mGenCoach(){
   for(let i=6;i>=0;i--){const dt=new Date(now);dt.setDate(dt.getDate()-i);const k=dt.toISOString().slice(0,10);const nutCheck=gls('nutri_'+k,{});const nutDone=NI.filter(x=>nutCheck[x.id]).length;const foodLog=gls('food_log_'+k,[]);let prot=0;foodLog.forEach(e=>{prot+=e.prot||0});const diario=gls('diary_'+k,null);const agua=gls('water_'+k,0);dias.push({nutDone,prot:Math.round(prot),mood:diario?.mood||null,aguaMl:agua})}
   const profile=getDanielProfileSummary();const profileCtx=profileToGroqContext(profile);const prompt='Eres el coach personal de Daniel. HISTORIAL ACUMULADO:\n'+profileCtx+'\n\nDATOS SEMANA ACTUAL: '+JSON.stringify(dias)+'. Genera 3-4 insights concretos. SOLO JSON: {"insights":[{"icon":"...","tipo":"logro|alerta|consejo","titulo":"...","descripcion":"1-2 frases","badge":"..."}],"recomendacion_semana":"..."}';
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.3,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.3-70b-versatile':'gemini-2.5-flash'),max_tokens:400,temperature:0.3,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
       const errBody=await res.text();
       console.error('Groq '+res.status+':',errBody);
@@ -2789,7 +2819,7 @@ async function mGenPatrones(){
   if(datos.length<5){el.innerHTML='<div style="font-size:13px;color:var(--tx3)">Necesitas al menos 5 días de diario. Sigue registrando.</div>';return}
   const prompt='Analiza correlaciones entre estado ánimo y hábitos de Daniel. Datos (mood, proteína g, agua ml): '+JSON.stringify(datos)+'. SOLO JSON: {"patrones":[{"emoji":"...","titulo":"máx 6 palabras","descripcion":"1-2 frases","confianza":"alta|media|baja"}],"conclusion":"..."}';
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:400,temperature:0.2,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.3-70b-versatile':'gemini-2.5-flash'),max_tokens:400,temperature:0.2,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
       const errBody=await res.text();
       console.error('Groq '+res.status+':',errBody);
@@ -2928,7 +2958,7 @@ async function mGenPredicciones(profile){
   const avgKcal=dias7.length?Math.round(dias7.reduce((a,d)=>a+d.kcal,0)/dias7.length):0;
   const prompt='Coach nutrición deportiva. Predicciones para Daniel (35 años, recomposición). Datos: proteína '+profile.protMedia+'g/día, agua '+(profile.aguaMedia/1000).toFixed(1)+'L, peso '+profile.pesoActual+'kg tendencia '+profile.tendencia+'kg/sem, déficit medio kcal '+(2100-avgKcal)+'/día, '+(profile.pctProtOk)+'% días con objetivo proteína. SOLO JSON: {"predicciones":[{"emoji":"...","titulo":"predicción corta","valor":"ej: -0.3kg","plazo":"esta semana","descripcion":"cómo","accion":"qué hacer"}],"resumen":"frase estado actual"}';
   try{
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:350,temperature:0.2,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.3-70b-versatile':'gemini-2.5-flash'),max_tokens:350,temperature:0.2,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
       const errBody=await res.text();
       console.error('Groq '+res.status+':',errBody);
@@ -3154,10 +3184,10 @@ RESPUESTAS DE ESTA SEMANA:
 Genera un análisis de coach real. Conecta lo que dice con sus datos reales. Sé directo y concreto. Máximo 4-5 frases. Sin JSON, solo texto.`;
 
   try{
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    const res = await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_M},
-      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:200,temperature:0.4,messages:[{role:'user',content:prompt}]})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
+      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.3-70b-versatile':'gemini-2.5-flash'),max_tokens:200,temperature:0.4,messages:[{role:'user',content:prompt}]})
     });
     const data = await res.json();
     const analysis = data.choices?.[0]?.message?.content?.trim()||'';
@@ -3973,7 +4003,7 @@ async function mFoodSearch(query){
         data={choices:[{message:{content:JSON.stringify(_fcached.data)}}]};
         res={ok:true};
       } else {
-        res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:250,temperature:0.1,messages:[{role:'user',content:prompt}]})});
+        res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:250,temperature:0.1,messages:[{role:'user',content:prompt}]})});
       if(!res.ok){
       const errBody=await res.text();
       console.error('Groq '+res.status+':',errBody);
@@ -4013,10 +4043,10 @@ async function mCalcWithGroq(query){
   if(resEl)resEl.innerHTML=`<div style="font-size:12px;color:var(--tx2);padding:10px;display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pur);animation:sdpulse .8s infinite"></span>Calculando macros con IA nutricionista...</div>`;
   try{
     const prompt='Eres nutricionista experto en comida española. El usuario ha comido: "'+query+'". Esto puede ser un plato preparado, comida de restaurante o casera. Estima los macros TOTALES para esa cantidad/ración descrita. Sé preciso y realista. SOLO JSON: {"nombre":"nombre claro del plato","cantidad_total":"descripción ej: 1 kebab mediano ~350g","kcal":número,"proteinas_g":número,"carbohidratos_g":número,"grasas_g":número,"nota":"explicación de cómo lo has calculado"}';
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
-      body:JSON.stringify({model:'llama-3.1-8b-instant',max_tokens:200,temperature:0.1,messages:[{role:'user',content:prompt}]})
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
+      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:200,temperature:0.1,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){
       const errBody=await res.text();
@@ -4547,9 +4577,50 @@ function clearTodayCache(){
   alert('Caché del briefing eliminada. Se regenerará al recargar.');
 }
 
+
+function mRenderAIKeyStatus(){
+  const provider=getAIProvider();
+  const sel=document.getElementById('m-ai-provider');
+  if(sel)sel.value=provider;
+  const status=document.getElementById('m-ai-key-status');
+  const input=document.getElementById('m-ai-key-input');
+  if(input){input.value=getAIKey();input.placeholder=provider==='gemini'?'Pega tu key Gemini (AIza...)':'Pega tu key Groq (gsk_...)';}
+  if(status){
+    if(hasAIKey()){status.textContent='✓ OK';status.style.background='rgba(34,197,94,.15)';status.style.color='var(--grn)';}
+    else{status.textContent='Sin key';status.style.background='rgba(245,158,11,.15)';status.style.color='var(--org)';}
+  }
+}
+function mSaveAIKey(){
+  const input=document.getElementById('m-ai-key-input');
+  const key=(input?.value||'').trim();
+  if(key.length<10){alert('Esa key parece corta. Verifica.');return;}
+  localStorage.setItem('lp_ai_key',key);
+  document.getElementById('m-ai-key-save').style.display='none';
+  const msg=document.getElementById('m-ai-key-msg');
+  if(msg){msg.textContent='✓ Guardada';setTimeout(()=>{msg.textContent=''},3000);}
+  mRenderAIKeyStatus();
+  Object.keys(localStorage).filter(k=>k.startsWith('lp_ai_')||k.startsWith('lp_groq_')).forEach(k=>{
+    if(k!=='lp_ai_key'&&k!=='lp_ai_provider')localStorage.removeItem(k);
+  });
+}
+function mSaveAIProvider(){
+  const sel=document.getElementById('m-ai-provider');
+  if(!sel)return;
+  localStorage.setItem('lp_ai_provider',sel.value);
+  mRenderAIKeyStatus();
+}
+function mClearAIKey(){
+  if(!confirm('¿Borrar la API key?'))return;
+  localStorage.removeItem('lp_ai_key');
+  const input=document.getElementById('m-ai-key-input');
+  if(input)input.value='';
+  mRenderAIKeyStatus();
+}
+
 function rAjustes(){
   renderNotifSettingsMob();
   renderMacroSettingsMob();
+  mRenderAIKeyStatus();
   // Update profile peso
   const pw = document.getElementById('profile-peso');
   if(pw){
