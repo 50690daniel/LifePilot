@@ -622,6 +622,194 @@ button,
   content:'';position:absolute;bottom:-2px;left:20%;right:20%;
   height:2px;border-radius:1px;background:var(--blu);
 }
+
+/* === EXERCISE STYLES (adapted for desktop light theme) === */
+.day-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.day-strip::-webkit-scrollbar{display:none}
+.day-pill{
+  flex-shrink:0;min-width:64px;padding:10px 14px;border-radius:14px;
+  background:var(--surface2);border:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;transition:all .15s;
+}
+.day-pill:hover{background:var(--surface3)}
+.day-pill.active{background:var(--text);color:#fff;border-color:var(--text)}
+.day-pill.today{border-color:var(--blu);box-shadow:0 0 0 2px var(--blu-light)}
+.day-pill.rest{opacity:.55}
+.day-pill .day-num{font-size:18px;font-weight:700}
+.day-pill .day-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;opacity:.8}
+.day-pill .day-emoji{font-size:14px;margin-top:2px}
+
+.section-header{
+  display:flex;align-items:center;gap:14px;padding:16px;
+  background:var(--surface2);
+  border-bottom:1px solid var(--border);
+}
+.sh-icon{
+  width:42px;height:42px;border-radius:12px;
+  background:var(--blu-bg);color:var(--blu);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+}
+.sh-title{font-size:15px;font-weight:700;color:var(--text)}
+.sh-sub{font-size:12px;color:var(--text3);margin-top:2px}
+
+.ex-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;
+  margin-bottom:12px;
+  transition:all .18s;
+}
+.ex-card:hover{border-color:var(--border2);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.ex-card.completed{opacity:.55;background:var(--grn-light)}
+.ex-card.active-card{border-color:var(--blu);box-shadow:0 0 0 3px var(--blu-light)}
+.ex-header{
+  display:flex;align-items:center;gap:14px;padding:14px 16px;
+  cursor:pointer;
+}
+.ex-check{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  border:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;cursor:pointer;background:var(--surface);
+}
+.ex-check:hover{border-color:var(--text2)}
+.ex-check.done{background:var(--grn);border-color:var(--grn);box-shadow:0 2px 8px rgba(22,112,63,.3)}
+.ex-check.done::after{content:'✓';font-size:14px;font-weight:800;color:#fff}
+.ex-info{flex:1;min-width:0}
+.ex-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.ex-meta{display:flex;gap:6px;flex-wrap:wrap}
+.ex-tag{
+  font-size:11px;font-weight:600;padding:3px 9px;border-radius:100px;
+  background:var(--surface2);color:var(--text2);
+}
+.tag-sets{background:var(--blu-bg);color:var(--blu)}
+.tag-weight{background:var(--org-bg);color:var(--org)}
+.tag-muscle{background:var(--pur-bg);color:var(--pur)}
+.ex-chevron{
+  font-size:22px;color:var(--text3);font-weight:300;
+  transition:transform .2s;flex-shrink:0;
+}
+.ex-chevron.open{transform:rotate(90deg);color:var(--text2)}
+.ex-body{display:none;padding:0 16px 16px}
+.ex-body.open{display:block;animation:exfadein .25s ease}
+@keyframes exfadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+.ex-gif-wrap{
+  width:100%;aspect-ratio:1.4;background:var(--surface2);
+  border-radius:12px;overflow:hidden;margin-bottom:14px;
+  display:flex;align-items:center;justify-content:center;
+}
+.ex-gif-wrap img{max-width:100%;max-height:100%;object-fit:contain}
+.ex-gif-loading{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3)}
+.gif-spinner{
+  width:14px;height:14px;border:2px solid var(--border);
+  border-top-color:var(--blu);border-radius:50%;animation:gifspin .8s linear infinite;
+}
+@keyframes gifspin{to{transform:rotate(360deg)}}
+.ex-gif-fallback{
+  font-size:48px;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text3);
+}
+
+.ex-instructions{margin-bottom:14px}
+.ex-instr-title{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--text3);margin-bottom:8px;
+}
+.ex-step{
+  display:flex;gap:10px;padding:8px 10px;
+  border-radius:8px;margin-bottom:4px;background:var(--surface2);
+}
+.ex-step:last-child{margin-bottom:0}
+.ex-step-num{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  background:var(--text);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;
+}
+.ex-step-text{font-size:13px;color:var(--text2);line-height:1.5}
+
+.ex-tip{
+  display:flex;gap:10px;padding:12px;
+  background:var(--yel-bg);border-radius:10px;margin-bottom:14px;
+}
+.ex-tip-icon{font-size:16px;flex-shrink:0}
+.ex-tip > div:last-child{font-size:13px;color:var(--text2);line-height:1.5}
+
+.ai-coach-btn{
+  width:100%;padding:11px 14px;border-radius:10px;
+  background:var(--pur-bg);color:var(--pur);border:1px solid var(--pur-light);
+  font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);
+  transition:all .15s;margin-bottom:10px;
+}
+.ai-coach-btn:hover{background:var(--pur);color:#fff}
+.ai-coach-btn:disabled{opacity:.6;cursor:wait}
+.ai-coach-result{margin-bottom:14px}
+
+.sets-tracker{
+  background:var(--surface2);border-radius:12px;padding:12px;
+}
+.sets-title{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--text3);margin-bottom:10px;
+}
+.set-row{
+  display:flex;align-items:center;gap:8px;padding:8px;
+  background:var(--surface);border-radius:8px;margin-bottom:5px;
+  border:1px solid var(--border);
+}
+.set-row:last-child{margin-bottom:0}
+.set-row.set-checked{background:var(--grn-light);border-color:var(--grn-bg)}
+.set-num{
+  width:24px;height:24px;border-radius:50%;flex-shrink:0;
+  background:var(--surface2);color:var(--text2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;
+}
+.set-row.set-checked .set-num{background:var(--grn);color:#fff}
+.set-data{display:flex;gap:6px;flex:1}
+.set-input{
+  width:54px;padding:5px 8px;border:1px solid var(--border);
+  border-radius:6px;background:var(--surface);
+  font-size:12px;font-weight:600;text-align:center;color:var(--text);
+  font-family:var(--font);
+}
+.set-input:focus{outline:none;border-color:var(--blu)}
+.set-w,.set-r{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text3)}
+.set-action{
+  padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;
+  cursor:pointer;background:var(--text);color:#fff;border:none;
+  font-family:var(--font);transition:opacity .15s;
+}
+.set-action:hover{opacity:.85}
+.set-row.set-checked .set-action{background:var(--surface2);color:var(--text2)}
+
+.progression-banner{
+  display:flex;gap:10px;padding:12px;margin-bottom:14px;
+  background:var(--grn-light);border:1px solid var(--grn-bg);border-radius:10px;
+}
+.progression-icon{font-size:18px;flex-shrink:0}
+.progression-text{font-size:12px;color:var(--text2);line-height:1.5}
+.progression-text strong{color:var(--grn)}
+
+.finish-btn{
+  width:100%;padding:14px;margin-top:8px;
+  background:var(--grn);color:#fff;border:none;
+  border-radius:14px;font-size:15px;font-weight:700;
+  cursor:pointer;font-family:var(--font);
+  transition:transform .1s;
+}
+.finish-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(22,112,63,.3)}
+.finish-btn:active{transform:translateY(0)}
+
+.empty-state{
+  text-align:center;padding:40px 20px;
+}
+.em-icon{font-size:56px;margin-bottom:12px;opacity:.7}
+.empty-state p{font-size:14px;color:var(--text2);line-height:1.6;margin:0}
+/* === END EXERCISE STYLES === */
+
 </style>
 </head>
 <body>
@@ -3046,12 +3234,81 @@ function rDiarioAll(){
   }
 }
 function rDiarioHoy(){
-  const saved=gls('diary_'+dk(),null);const el=document.getElementById('diary-today');if(!el)return;
-  if(saved){el.innerHTML=`<div class="diary-saved">✅ Entrada guardada<br><br><div style="font-size:36px;margin:8px 0">${saved.mood}</div><div style="font-size:14px;color:var(--text2)">${saved.text||''}</div><div class="fb-status" style="color:${saved.fbSync?'var(--grn)':'var(--org)'};background:${saved.fbSync?'var(--grn-bg)':'var(--org-bg)'}">${saved.fbSync?'☁️ Guardado en Firebase':'⏳ Guardando...'}</div></div>`;return}
-  el.innerHTML=`<div style="font-size:13px;font-weight:600;margin-bottom:11px;color:var(--text2)">¿Cómo ha ido hoy?</div><div class="mood-row">${['🔥 Genial','😊 Bien','😐 Normal','😞 Regular'].map(m=>`<div class="mood-btn ${diaryMood===m?'sel':''}" onclick="setMood('${m}')">${m}</div>`).join('')}</div><textarea class="diary-input" id="diary-txt" rows="4" placeholder="Una frase sobre el día... (opcional)"></textarea><button class="diary-submit ${!diaryMood?'disabled':''}" onclick="saveDiary()" ${!diaryMood?'disabled':''}>Guardar entrada</button>`;
+  // If editing a past date, render that instead
+  const targetDate = window.diaryEditDate || dk();
+  const isPast = targetDate !== dk();
+  const saved=gls('diary_'+targetDate,null);
+  const el=document.getElementById('diary-today');if(!el)return;
+  
+  const dateLabel = isPast ? `📅 Editando ${formatDiaryDate(targetDate)}` : '¿Cómo ha ido hoy?';
+  
+  if(saved && !window.diaryForceEdit){
+    el.innerHTML=`<div class="diary-saved">${isPast?`<div style="font-size:12px;color:var(--text3);margin-bottom:8px">📅 ${formatDiaryDate(targetDate)}</div>`:''}✅ Entrada guardada<br><br><div style="font-size:36px;margin:8px 0">${saved.mood}</div><div style="font-size:14px;color:var(--text2)">${saved.text||''}</div><div class="fb-status" style="color:${saved.fbSync?'var(--grn)':'var(--org)'};background:${saved.fbSync?'var(--grn-bg)':'var(--org-bg)'}">${saved.fbSync?'☁️ Guardado en Firebase':'⏳ Guardando...'}</div><div style="margin-top:14px;display:flex;gap:8px;justify-content:center"><button onclick="enableDiaryEdit()" style="padding:8px 16px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">✏️ Editar</button>${isPast?'<button onclick="exitDiaryEdit()" style="padding:8px 16px;border-radius:8px;background:transparent;color:var(--text3);border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">← Volver a hoy</button>':''}</div></div>`;
+    return;
+  }
+  
+  // Edit mode
+  const currentMood = saved?.mood || diaryMood || '';
+  const currentText = saved?.text || '';
+  el.innerHTML=`${isPast?`<div style="font-size:12px;color:var(--blu);margin-bottom:8px;font-weight:600">${dateLabel}</div>`:`<div style="font-size:13px;font-weight:600;margin-bottom:11px;color:var(--text2)">${dateLabel}</div>`}<div class="mood-row">${['🔥 Genial','😊 Bien','😐 Normal','😞 Regular'].map(m=>`<div class="mood-btn ${currentMood===m?'sel':''}" onclick="setMood('${m}')">${m}</div>`).join('')}</div><textarea class="diary-input" id="diary-txt" rows="4" placeholder="Una frase sobre el día... (opcional)">${currentText.replace(/"/g,'&quot;')}</textarea><div style="display:flex;gap:8px"><button class="diary-submit ${!currentMood&&!diaryMood?'disabled':''}" onclick="saveDiary()" ${!currentMood&&!diaryMood?'disabled':''} style="flex:1">${saved?'Actualizar entrada':'Guardar entrada'}</button>${(isPast||saved)?'<button onclick="exitDiaryEdit()" style="padding:11px 16px;border-radius:10px;background:transparent;color:var(--text3);border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancelar</button>':''}</div>`;
+}
+
+function formatDiaryDate(dateStr){
+  // dateStr: YYYY-MM-DD
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m-1, d);
+  const days = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${days[date.getDay()]} ${d} ${months[m-1]} ${y}`;
+}
+
+function enableDiaryEdit(){
+  window.diaryForceEdit = true;
+  // Pre-fill mood from saved
+  const targetDate = window.diaryEditDate || dk();
+  const saved = gls('diary_'+targetDate, null);
+  if(saved) diaryMood = saved.mood;
+  rDiarioHoy();
+}
+
+function exitDiaryEdit(){
+  window.diaryEditDate = null;
+  window.diaryForceEdit = false;
+  diaryMood = '';
+  rDiarioHoy();
+}
+
+function openDiarioEdit(dateStr){
+  window.diaryEditDate = dateStr;
+  window.diaryForceEdit = true;
+  // Pre-fill mood from saved
+  const saved = gls('diary_'+dateStr, null);
+  diaryMood = saved?.mood || '';
+  rDiarioHoy();
+  // Scroll to top of diary
+  setTimeout(()=>{
+    document.getElementById('diary-today')?.scrollIntoView({behavior:'smooth',block:'start'});
+  }, 100);
 }
 function setMood(m){diaryMood=m;rDiarioHoy()}
-async function saveDiary(){if(diarySaving||!diaryMood)return;diarySaving=true;const txt=document.getElementById('diary-txt')?.value?.trim()||'';const today=dk();sls('diary_'+today,{mood:diaryMood,text:txt,fbSync:false});rDiarioHoy();rHomeDiaryMini();const ok=await window.fbSaveDiary(today,diaryMood,txt);sls('diary_'+today,{mood:diaryMood,text:txt,fbSync:ok});diarySaving=false;rDiarioHoy()}
+async function saveDiary(){
+  if(diarySaving||!diaryMood)return;
+  diarySaving=true;
+  const txt=document.getElementById('diary-txt')?.value?.trim()||'';
+  const targetDate = window.diaryEditDate || dk();
+  sls('diary_'+targetDate,{mood:diaryMood,text:txt,fbSync:false});
+  // Update calEntries cache so calendar refreshes
+  if(typeof calEntries==='object')calEntries[targetDate]={mood:diaryMood,text:txt};
+  rHomeDiaryMini();
+  const ok=await window.fbSaveDiary(targetDate,diaryMood,txt);
+  sls('diary_'+targetDate,{mood:diaryMood,text:txt,fbSync:ok});
+  diarySaving=false;
+  // Exit edit mode after save
+  window.diaryForceEdit = false;
+  rDiarioHoy();
+  // Refresh calendar
+  if(typeof rDiaryCal==='function')rDiaryCal();
+}
 async function rDiaryCal(){const el=document.getElementById('diary-cal');if(!el)return;el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:12px 0">Cargando...</div>';try{calEntries=await window.fbGetMonth(calYear,calMonth)||{}}catch(e){calEntries={}}renderCal()}
 function renderCal(){
   const el=document.getElementById('diary-cal');if(!el)return;
@@ -3062,7 +3319,18 @@ function renderCal(){
   for(let i=0;i<startDow;i++)h+='<div class="cal-day"></div>';
   for(let d=1;d<=totalDays;d++){const dateStr=`${calYear}-${pad(calMonth+1)}-${pad(d)}`,entry=calEntries[dateStr],isToday=dateStr===today,moodEmoji=entry?entry.mood.split(' ')[0]:'';h+=`<div class="cal-day ${entry?'has-entry':''} ${isToday?'today':''}" onclick="showCalDetail('${dateStr}')">${entry?`<span class="cal-emoji">${moodEmoji}</span>`:`<span style="font-size:12px;color:var(--text3)">${d}</span>`}${entry?`<span class="cal-num">${d}</span>`:''}</div>`}
   h+='</div>';
-  if(calDetail&&calEntries[calDetail]){const e=calEntries[calDetail];h+=`<div class="cal-detail"><div style="font-size:12px;color:var(--text2);margin-bottom:3px">${calDetail}</div><div style="font-size:22px;margin-bottom:5px">${e.mood}</div>${e.text?`<div style="font-size:13px;color:var(--text)">"${e.text}"</div>`:''}</div>`}
+  if(calDetail){
+    const e=calEntries[calDetail];
+    if(e){
+      h+=`<div class="cal-detail"><div style="font-size:12px;color:var(--text2);margin-bottom:3px">📅 ${calDetail}</div><div style="font-size:22px;margin-bottom:5px">${e.mood}</div>${e.text?`<div style="font-size:13px;color:var(--text);margin-bottom:10px">"${e.text}"</div>`:''}<button onclick="openDiarioEdit('${calDetail}')" style="padding:7px 14px;border-radius:8px;background:var(--text);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:6px">✏️ Editar</button></div>`;
+    } else {
+      // No entry for this day - offer to add one
+      const isFuture = new Date(calDetail) > new Date(dk());
+      if(!isFuture){
+        h+=`<div class="cal-detail"><div style="font-size:12px;color:var(--text2);margin-bottom:5px">📅 ${calDetail}</div><div style="font-size:13px;color:var(--text3);margin-bottom:10px">Sin entrada para este día.</div><button onclick="openDiarioEdit('${calDetail}')" style="padding:7px 14px;border-radius:8px;background:var(--blu);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">+ Añadir entrada</button></div>`;
+      }
+    }
+  }
   const entries=Object.values(calEntries);if(entries.length>0){const counts={};entries.forEach(e=>{counts[e.mood]=(counts[e.mood]||0)+1});h+=`<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:7px">Resumen del mes</div>`;Object.entries(counts).sort((a,b)=>b[1]-a[1]).forEach(([mood,count])=>{const pct=Math.round(count/entries.length*100);h+=`<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px"><span style="font-size:15px">${mood.split(' ')[0]}</span><div style="flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--grn);border-radius:3px"></div></div><span style="font-size:12px;color:var(--text2)">${count} (${pct}%)</span></div>`});h+='</div>'}
   el.innerHTML=h;
 }
