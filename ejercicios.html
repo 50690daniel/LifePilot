@@ -1205,10 +1205,43 @@ function toggleEx(id){
 }
 
 // ── LOAD GIF from ExerciseDB ──
-async function loadGif(exId,muscleGroup,exName){
+// Map muscle group → emoji
+function getMuscleEmoji(muscleGroup){
+  if(!muscleGroup)return '💪';
+  const g=String(muscleGroup).toLowerCase();
+  if(g.includes('biceps')||g.includes('bíceps'))return '💪';
+  if(g.includes('triceps')||g.includes('tríceps'))return '🦾';
+  if(g.includes('pecho'))return '🫀';
+  if(g.includes('espalda'))return '🔙';
+  if(g.includes('hombro'))return '🤷';
+  if(g.includes('cuadriceps')||g.includes('cuádriceps'))return '🦵';
+  if(g.includes('gluteo')||g.includes('glúteo'))return '🍑';
+  if(g.includes('isquio'))return '🦵';
+  if(g.includes('gemelo')||g.includes('pantorrilla'))return '🦶';
+  if(g.includes('abdomen')||g.includes('core')||g.includes('abdominal'))return '🎯';
+  if(g.includes('antebrazo'))return '✊';
+  if(g.includes('braquial'))return '💪';
+  return '💪';
+}
+
+function loadGif(exId,muscleGroup,exName){
   const wrap=document.getElementById('gif-'+exId);if(!wrap)return;
-  // ExerciseDB now requires paid API key - show muscle emoji instead
-  wrap.innerHTML=`<div class="gif-placeholder" style="font-size:64px;height:160px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border-radius:var(--r-lg)">${getMuscleEmoji(muscleGroup)}</div>`;
+  
+  // If muscleGroup not passed, look it up from PROGRAMA
+  if(!muscleGroup && typeof PROGRAMA==='object'){
+    for(const dayKey in PROGRAMA){
+      const ex=PROGRAMA[dayKey]?.ejercicios?.find(e=>e.id===exId);
+      if(ex){
+        muscleGroup=ex.musculos_principales?.[0]||'';
+        exName=ex.nombre||'';
+        break;
+      }
+    }
+  }
+  
+  const emoji=getMuscleEmoji(muscleGroup);
+  const muscleLabel=muscleGroup||'Músculo';
+  wrap.innerHTML=`<div class="gif-placeholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;height:160px;background:rgba(255,255,255,.04);border-radius:var(--r-lg);padding:20px"><div style="font-size:64px;line-height:1">${emoji}</div><div style="font-size:12px;color:var(--tx2);font-weight:600;text-transform:uppercase;letter-spacing:.5px">${muscleLabel}</div></div>`;
 }
 
 // ── SVG MUSCLE DIAGRAM FALLBACK ──

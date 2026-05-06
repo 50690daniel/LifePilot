@@ -6145,7 +6145,25 @@ function toggleEx(id){
 }
 
 // ── LOAD GIF from ExerciseDB ──
-async function loadGif(exId,muscleGroup,exName){
+async function getMuscleEmoji(muscleGroup){
+  if(!muscleGroup)return '💪';
+  const g=String(muscleGroup).toLowerCase();
+  if(g.includes('biceps')||g.includes('bíceps'))return '💪';
+  if(g.includes('triceps')||g.includes('tríceps'))return '🦾';
+  if(g.includes('pecho'))return '🫀';
+  if(g.includes('espalda'))return '🔙';
+  if(g.includes('hombro'))return '🤷';
+  if(g.includes('cuadriceps')||g.includes('cuádriceps'))return '🦵';
+  if(g.includes('gluteo')||g.includes('glúteo'))return '🍑';
+  if(g.includes('isquio'))return '🦵';
+  if(g.includes('gemelo')||g.includes('pantorrilla'))return '🦶';
+  if(g.includes('abdomen')||g.includes('core')||g.includes('abdominal'))return '🎯';
+  if(g.includes('antebrazo'))return '✊';
+  if(g.includes('braquial'))return '💪';
+  return '💪';
+}
+
+function loadGif(exId,muscleGroup,exName){
   const wrap=document.getElementById('gif-'+exId);if(!wrap)return;
   wrap.innerHTML=`<div style="font-size:54px;height:140px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border-radius:var(--r-lg)">${getMuscleEmoji?getMuscleEmoji(muscleGroup):'💪'}</div>`;
 }
