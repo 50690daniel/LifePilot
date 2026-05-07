@@ -1347,82 +1347,6 @@ button,
 </div></div>
 
 <!-- ════════════ EJERCICIOS ════════════ -->
-<div id="page-ejercicios" class="page">
-<div class="inner" style="max-width:1000px">
-
-  <!-- TOPBAR EJERCICIOS -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-    <div style="font-family:var(--font-serif);font-size:24px">💪 Ejercicios</div>
-    <div id="ex-top-streak" style="font-size:12px;font-weight:700;padding:6px 14px;border-radius:20px;background:var(--org-bg);color:var(--org);border:1px solid rgba(168,82,0,.15)"></div>
-  </div>
-
-  <!-- TABS -->
-  <div style="display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border-radius:var(--r);padding:4px;width:fit-content">
-    <div id="ex-tab-hoy" onclick="exSwitchTab('hoy')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:var(--text);color:#fff">Hoy</div>
-    <div id="ex-tab-historial" onclick="exSwitchTab('historial')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">Historial</div>
-    <div id="ex-tab-programa" onclick="exSwitchTab('programa')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">Programa</div>
-    <div id="ex-tab-config" onclick="exSwitchTab('config')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">⚙️ Config</div>
-  </div>
-
-  <!-- HOY -->
-  <div id="ex-panel-hoy">
-    <div class="day-strip" id="ex-day-strip" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:none"></div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px" id="ex-week-summary"></div>
-    <div id="ex-workout-content"></div>
-  </div>
-
-  <!-- HISTORIAL -->
-  <div id="ex-panel-historial" style="display:none">
-    <div id="ex-history-content"></div>
-  </div>
-
-  <!-- PROGRAMA -->
-  <div id="ex-panel-programa" style="display:none">
-    <div id="ex-program-content"></div>
-  </div>
-
-  <!-- CONFIG -->
-  <div id="ex-panel-config" style="display:none">
-    <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;padding:12px 14px;background:var(--surface2);border-radius:var(--r);border-left:3px solid var(--blu)">
-      💡 Los cambios que hagas aquí se sincronizan con el móvil automáticamente vía Firebase. Añade la URL del vídeo de YouTube de cada ejercicio y el móvil lo mostrará al entrenar.
-    </div>
-    <div id="ex-config-content"></div>
-    <div style="display:flex;gap:10px;margin-top:20px">
-      <button onclick="saveExConfig()" style="padding:11px 24px;border-radius:var(--r);background:var(--text);border:none;color:#fff;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer">☁️ Guardar y sincronizar</button>
-      <span id="ex-config-msg" style="font-size:12px;color:var(--grn);align-self:center"></span>
-    </div>
-  </div>
-
-</div>
-
-<!-- REST TIMER DESKTOP -->
-<div id="ex-rest-timer" style="position:fixed;bottom:20px;right:28px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:14px 20px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow-lg);z-index:300;opacity:0;transition:opacity .3s;pointer-events:none">
-  <div style="position:relative;width:48px;height:48px">
-    <svg width="48" height="48" style="transform:rotate(-90deg)">
-      <circle cx="24" cy="24" r="20" fill="none" stroke="var(--surface2)" stroke-width="4"/>
-      <circle cx="24" cy="24" r="20" fill="none" stroke="var(--org)" stroke-width="4" stroke-dasharray="125.6" id="ex-rest-arc" stroke-dashoffset="0" stroke-linecap="round"/>
-    </svg>
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:14px;font-weight:700;color:var(--org)" id="ex-rest-count">60</div>
-  </div>
-  <div>
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)">Descanso</div>
-    <div style="font-size:13px;font-weight:600;color:var(--text2)" id="ex-rest-msg">Recuperando...</div>
-  </div>
-  <div onclick="exSkipRest()" style="padding:6px 12px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">Saltar</div>
-</div>
-
-<!-- COMPLETION OVERLAY DESKTOP -->
-<div id="ex-complete-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);z-index:400;align-items:center;justify-content:center">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);padding:32px;max-width:480px;width:90%;text-align:center;box-shadow:var(--shadow-lg)">
-    <div style="font-size:56px;margin-bottom:16px">🏆</div>
-    <div style="font-family:var(--font-serif);font-size:28px;margin-bottom:8px">¡Entreno completado!</div>
-    <div style="font-size:14px;color:var(--text2);margin-bottom:20px" id="ex-complete-sub"></div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px" id="ex-complete-stats"></div>
-    <div id="ex-complete-ai" style="background:var(--pur-bg);border-radius:var(--r);padding:14px;font-size:13px;color:var(--pur);line-height:1.6;margin-bottom:20px;display:none;text-align:left"></div>
-    <button onclick="exCloseComplete()" style="padding:12px 28px;border-radius:var(--r-xl);background:var(--text);border:none;color:#fff;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer">Cerrar</button>
-  </div>
-</div>
-</div><!-- end page-ejercicios -->
 
 
 <!-- ════════════ OCIO ════════════ -->
@@ -1764,6 +1688,8 @@ let planB=false,curOcio='youtube',taskTab='hoy',tasksCache=[],restTimerId=null,r
 
 // ═══════════ NAV ═══════════
 function navTo(id,btn){
+  // Ejercicios siempre va a ejercicios.html
+  if(id==='ejercicios'){location.href='ejercicios.html';return;}
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const pg=document.getElementById('page-'+id);
   if(!pg){console.error('❌ page-'+id+' not found');return;}
@@ -2615,162 +2541,6 @@ function rNut(){
 }
 function tNut(id){const d=dk(),ch=gls('nutri_'+d,{});ch[id]=!ch[id];sls('nutri_'+d,ch);if(window.syncNutToFb)window.syncNutToFb(d);rNut();if(document.getElementById('page-home').classList.contains('active'))rHomeNut()}
 
-// ═══════════ EJERCICIOS ═══════════
-
-function selDay(k){curDay=k;planB=false;rEx()}
-function tSet2(key,s,name,w,totalSets){const d=dk(),lsk='sets_'+d+'_'+curDay,sets=gls(lsk,{});const sk=`${key}_${s}`;sets[sk]=!sets[sk];sls(lsk,sets);if(window.fbSaveEjercicioSets)window.fbSaveEjercicioSets(d+'_'+curDay,sets);let done=0;for(let i=1;i<=totalSets;i++)if(sets[`${key}_${i}`])done++;if(done>0){const hist=gls('ex_history',{});hist[name]={date:d,sets:done+'/'+totalSets,weight:w||'—'};sls('ex_history',hist);if(window.fbSaveExHistory)window.fbSaveExHistory(hist)}rEx();if(sets[sk])startRest()}
-function editW(name,cur){const nw=prompt(`Peso para ${name}:`,cur);if(!nw)return;const w=gls('weights',[]);const i=w.findIndex(x=>x.name===name);if(i>=0)w[i].w=nw;else w.push({name,w:nw});sls('weights',w);if(window.fbSaveEjercicioWeights)window.fbSaveEjercicioWeights(w);rEx()}
-function selOcio(id){selDeskOcioMode(id)}
-function rOcio(){
-  try{
-    deskOcioMode=null;
-  renderDeskOcioModes();
-  }catch(_err){
-    console.error('Error en rOcio:', _err);
-    const _pg=document.getElementById('page-ocio');
-    if(_pg){
-      const _inner=_pg.querySelector('.inner')||_pg;
-      if(!_inner.querySelector('.err-banner')){
-        const _b=document.createElement('div');
-        _b.className='err-banner';
-        _b.style.cssText='padding:12px 16px;background:var(--red-bg);color:var(--red);border-radius:var(--r);margin-bottom:12px;font-size:13px';
-        _b.textContent='⚠️ Error cargando: '+_err.message;
-        _inner.insertBefore(_b,_inner.firstChild);
-      }
-    }
-  }
-}
-
-function renderDeskOcioModes(){
-  const el=document.getElementById('ocio-modes');
-  const cont=document.getElementById('ocio-content');
-  if(!el)return;
-  el.style.display='grid';
-  if(cont) cont.innerHTML='';
-  const h=new Date().getHours();
-  const suggId=h<14?'youtube':h<18?'podcast':h<21?'youtube':'pelis';
-  const sugg=OCIO_MODES.find(m=>m.id===suggId);
-  if(cont)cont.innerHTML=`<div onclick="selDeskOcioMode('${suggId}')" style="margin-bottom:18px;padding:18px 22px;background:linear-gradient(135deg,${sugg.glow},transparent);border:1px solid var(--border);border-radius:var(--r-xl);cursor:pointer;display:flex;align-items:center;gap:16px;transition:all .15s" onmouseover="this.style.background='linear-gradient(135deg,${sugg.glow},var(--surface2))'" onmouseout="this.style.background='linear-gradient(135deg,${sugg.glow},transparent)'">
-    <span style="font-size:40px">${sugg.emoji}</span>
-    <div style="flex:1"><div style="font-size:16px;font-weight:700;color:var(--text)">${sugg.label}</div><div style="font-size:13px;color:var(--text2);margin-top:2px">${sugg.desc}</div><div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-top:4px">⚡ Para ahora</div></div>
-    <div style="font-size:24px;color:var(--text3)">›</div>
-  </div>`;
-  el.innerHTML=OCIO_MODES.map(m=>`
-    <div onclick="selDeskOcioMode('${m.id}')" style="padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);cursor:pointer;transition:all .15s;display:flex;flex-direction:column;min-height:100px;position:relative;overflow:hidden" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">
-      <div style="font-size:28px;margin-bottom:10px">${m.emoji}</div>
-      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px">${m.label}</div>
-      <div style="font-size:12px;color:var(--text3)">${m.sub}</div>
-    </div>`).join('');
-}
-
-function selDeskOcioMode(id){
-  deskOcioMode=id;
-  document.getElementById('ocio-modes').style.display='none';
-  if(id==='random')renderDeskOcioRandom();
-  else if(id==='youtube')renderDeskOcioYT();
-  else if(id==='podcast')renderDeskOcioPodcasts();
-  else if(id==='musica')renderDeskOcioMusica();
-  else renderDeskOcioList(id);
-}
-
-function deskOcioBackBtn(label){
-  return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
-    <div onclick="rOcio()" style="padding:6px 14px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">← Volver</div>
-    <div style="font-size:18px;font-weight:700;color:var(--text)">${label}</div>
-  </div>`;
-}
-
-function renderDeskOcioYT(){
-  const el=document.getElementById('ocio-content');if(!el)return;
-  const custom=ytCustom(),all=[...YT,...custom];
-  let h=deskOcioBackBtn('📺 YouTube');
-  h+=`<div style="font-size:13px;color:var(--text2);margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:var(--r)">Sin algoritmo. Solo los canales que tú elegiste.</div>`;
-  const tags=[...new Set(all.map(c=>c.tag||'Mis canales'))];
-  tags.forEach(tag=>{
-    const group=all.filter(c=>(c.tag||'Mis canales')===tag);
-    h+=`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin:14px 0 8px">${tag}</div>`;
-    group.forEach(ch=>{
-      const col=ch.color||'#BF5AF2';const init=ch.n.charAt(0);
-      h+=`<div onclick="window.open('${ch.u}','_blank')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-        <div style="width:38px;height:38px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;overflow:hidden;flex-shrink:0">
-          ${ch.img?`<img src="${ch.img}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`:''}${init}
-        </div>
-        <div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${ch.n}</div><div style="font-size:12px;color:var(--text3)">${ch.desc||''}</div></div>
-        <span style="font-size:12px;color:var(--text3)">›</span>
-      </div>`;
-    });
-  });
-  h+=`<div onclick="const v=prompt('URL o nombre del canal:');if(v){const custom=ytCustom();custom.push({n:v,u:v.startsWith('http')?v:'https://www.youtube.com/results?search_query='+encodeURIComponent(v),desc:'Canal añadido',tag:'Mis canales',color:'#E74C3C'});sls('yt_custom',custom);renderDeskOcioYT()}" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;margin-top:8px;border:1.5px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:600;color:var(--text3)">+ Añadir canal</div>`;
-  el.innerHTML=h;
-}
-
-function renderDeskOcioPodcasts(){
-  const el=document.getElementById('ocio-content');if(!el)return;
-  let h=deskOcioBackBtn('🎙️ Podcasts');
-  PODCASTS_D.forEach(p=>{
-    h+=`<div onclick="window.open('${p.u}','_blank')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);border:1px solid var(--border);margin-bottom:6px;cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-      <div style="width:38px;height:38px;border-radius:12px;background:${p.color}18;border:1px solid ${p.color}30;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${p.emoji}</div>
-      <div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--text)">${p.n}</div><div style="font-size:12px;color:var(--text3)">${p.desc}</div></div>
-      <span style="font-size:12px;color:var(--text3)">Spotify ›</span>
-    </div>`;
-  });
-  el.innerHTML=h;
-}
-
-function renderDeskOcioMusica(){
-  const el=document.getElementById('ocio-content');if(!el)return;
-  let h=deskOcioBackBtn('🎵 Música');
-  PLAYLISTS_D.forEach(p=>{
-    h+=`<div onclick="window.open('${p.u}','_blank')" style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-      <div style="width:44px;height:44px;border-radius:12px;background:${p.color}18;border:1px solid ${p.color}30;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${p.emoji}</div>
-      <div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--text)">${p.n}</div><div style="font-size:12px;color:var(--text2);margin-top:1px">${p.desc}</div></div>
-      <span style="font-size:12px;color:rgba(29,185,84,.7)">Spotify ›</span>
-    </div>`;
-  });
-  el.innerHTML=h;
-}
-
-function renderDeskOcioList(id){
-  const el=document.getElementById('ocio-content');if(!el)return;
-  const cfgs={pelis:{emoji:'🎬',label:'Pelis & Series',color:'var(--pur)'},juegos:{emoji:'🎮',label:'Juegos',color:'var(--grn)'}};
-  const cfg=cfgs[id]||cfgs.pelis;
-  const items=gls('ocio_'+id,[{name:'El Mago del Kremlin',done:false},{name:'La Vaquilla',done:false}].filter(()=>id==='pelis'));
-  const pending=items.filter(i=>!i.done),done=items.filter(i=>i.done);
-  let h=deskOcioBackBtn(cfg.emoji+' '+cfg.label);
-  pending.forEach(it=>{const ri=items.indexOf(it);h+=`<div class="li"><div class="li-txt">${it.name}</div><div class="li-acts"><button class="ib" onclick="deskTOcio('${id}',${ri})">✓</button><button class="ib" onclick="deskDOcio('${id}',${ri})">✕</button></div></div>`});
-  if(done.length){h+=`<div style="font-size:11px;color:var(--text3);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.6px;font-weight:700">Visto / jugado</div>`;done.forEach(it=>{const ri=items.indexOf(it);h+=`<div class="li" style="opacity:.5"><div class="li-txt done">${it.name}</div><div class="li-acts"><button class="ib" onclick="deskTOcio('${id}',${ri})">↩</button><button class="ib" onclick="deskDOcio('${id}',${ri})">✕</button></div></div>`})}
-  h+=`<div class="add-row" style="margin-top:12px"><input type="text" id="desk-ocio-inp" placeholder="Añadir..." onkeydown="if(event.key==='Enter'){const v=this.value.trim();if(v){const i=gls('ocio_${id}',[]);i.unshift({name:v,done:false});sls('ocio_${id}',i);renderDeskOcioList('${id}')}}"><button class="abtn grn" onclick="const v=document.getElementById('desk-ocio-inp').value.trim();if(v){const i=gls('ocio_${id}',[]);i.unshift({name:v,done:false});sls('ocio_${id}',i);renderDeskOcioList('${id}')}">+</button></div>`;
-  el.innerHTML=h;
-}
-function deskTOcio(lid,i){const items=gls('ocio_'+lid,[]);items[i].done=!items[i].done;sls('ocio_'+lid,items);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,items);renderDeskOcioList(lid)}
-function deskDOcio(lid,i){const items=gls('ocio_'+lid,[]);items.splice(i,1);sls('ocio_'+lid,items);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,items);renderDeskOcioList(lid)}
-
-function renderDeskOcioRandom(){
-  const el=document.getElementById('ocio-content');if(!el)return;
-  const all=[];
-  YT.forEach(ch=>all.push({tipo:'📺 YouTube',nombre:ch.n,url:ch.u,color:ch.color}));
-  gls('ocio_pelis',[]).filter(p=>!p.done).forEach(p=>all.push({tipo:'🎬 Peli',nombre:p.name,url:null,color:'#9B59B6'}));
-  PODCASTS_D.forEach(p=>all.push({tipo:'🎙️ Podcast',nombre:p.n,url:p.u,color:'#1ABC9C'}));
-  PLAYLISTS_D.forEach(p=>all.push({tipo:'🎵 Música',nombre:p.n,url:p.u,color:p.color}));
-  if(!all.length){el.innerHTML='<div style="color:var(--text3);padding:20px">Añade contenido primero</div>';return}
-  const pick=all[Math.floor(Math.random()*all.length)];
-  el.innerHTML=`${deskOcioBackBtn('🎲 Sorpréndeme')}
-    <div style="text-align:center;padding:40px 32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl)">
-      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:12px">${pick.tipo}</div>
-      <div style="font-family:var(--font-serif);font-size:28px;margin-bottom:20px">${pick.nombre}</div>
-      ${pick.url?`<a href="${pick.url}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px;border-radius:var(--r-xl);background:var(--grn);color:#fff;font-size:15px;font-weight:700;text-decoration:none;margin-bottom:16px">Abrir ›</a>`:''}
-    </div>
-    <div onclick="renderDeskOcioRandom()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;margin-top:12px;border:1.5px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:13px;font-weight:600;color:var(--text3)">🎲 Otra sugerencia</div>`;
-}
-function rng(){const s=[];YT.forEach(c=>s.push({t:'📺',n:c.n}));gls('ocio_pelis',defList('pelis')).filter(p=>!p.done).forEach(p=>s.push({t:'🎬',n:p.name}));gls('ocio_musica',[]).filter(m=>!m.done).forEach(m=>s.push({t:'🎵',n:m.name}));if(!s.length)return;const p=s[Math.floor(Math.random()*s.length)];document.getElementById('rng-r').innerHTML=`<div class="rng-result">${p.t} ${p.n}</div>`}
-function rYT(){const custom=ytCustom(),all=[...YT,...custom];let h='<div class="yt-list">';all.forEach((c,i)=>{const isC=i>=YT.length,ci=i-YT.length,col=c.color||'#BF5AF2',init=c.n.charAt(0);h+=`<div class="ytc" onclick="window.open('${c.u}','_blank')"><div class="ytc-av" style="background:${col}">${c.img?`<img src="${c.img}" onerror="this.outerHTML='${init}'">`:`${init}`}</div><div class="ytc-info"><div class="ytc-n">${c.n}</div><div class="ytc-d">${c.desc}</div></div>${c.tag?`<span class="ytc-tag" style="background:${col}18;color:${col}">${c.tag}</span>`:''}${isC?`<button class="ib" style="width:28px;height:28px;font-size:12px" onclick="event.stopPropagation();delYT(${ci})">✕</button>`:'<span style="color:var(--text3);font-size:16px">›</span>'}</div>`});h+='</div>';document.getElementById('oc').innerHTML=h;document.getElementById('oc').innerHTML+=`<div class="add-row"><input type="text" id="yt-input" placeholder="Nombre del canal..."><button class="abtn pur" onclick="addYTCh()">+</button></div>`}
-function addYTCh(){const v=document.getElementById('yt-input')?.value?.trim();if(!v)return;const c=ytCustom(),cols=['#E74C3C','#3498DB','#2ECC71','#F39C12','#9B59B6'];c.push({n:v,u:'https://www.youtube.com/results?search_query='+encodeURIComponent(v),desc:'Canal añadido',tag:'Nuevo',color:cols[c.length%cols.length]});sls('yt_custom',c);if(window.fbSaveYTCustom)window.fbSaveYTCustom(c);rYT()}
-function delYT(ci){const c=ytCustom();c.splice(ci,1);sls('yt_custom',c);if(window.fbSaveYTCustom)window.fbSaveYTCustom(c);rYT()}
-function rOcioList(lid){const items=gls('ocio_'+lid,defList(lid));let h='';if(!items.length)h='<div class="empty">¡Añade algo!</div>';else items.forEach((it,i)=>{h+=`<div class="li"><div class="li-txt ${it.done?'done':''}">${it.name}</div><div class="li-acts"><button class="ib" onclick="tOcio('${lid}',${i})">${it.done?'↩':'✓'}</button><button class="ib" onclick="dOcio('${lid}',${i})">✕</button></div></div>`});h+=`<div class="add-row"><input type="text" id="ocio-input-${lid}" placeholder="${{pelis:'Peli o serie...',musica:'Álbum...',juegos:'Juego...'}[lid]||'Añadir...'}"><button class="abtn pur" onclick="addOcioItem('${lid}')">+</button></div>`;document.getElementById('oc').innerHTML=h}
-function addOcioItem(lid){const v=document.getElementById('ocio-input-'+lid)?.value?.trim();if(!v)return;const i=gls('ocio_'+lid,defList(lid));i.unshift({name:v,done:false});sls('ocio_'+lid,i);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,i);rOcioList(lid)}
-function defList(lid){if(lid==='pelis')return[{name:'El Mago del Kremlin',done:false},{name:'La Vaquilla',done:false}];return[]}
-function tOcio(lid,i){const items=gls('ocio_'+lid,[]);items[i].done=!items[i].done;sls('ocio_'+lid,items);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,items);rOcioList(lid)}
-function dOcio(lid,i){const items=gls('ocio_'+lid,[]);items.splice(i,1);sls('ocio_'+lid,items);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,items);rOcioList(lid)}
 
 // ═══════════ TAREAS (Notion) ═══════════
 function setSS(s){['sdot','sdot2'].forEach(id=>{const d=document.getElementById(id);if(d)d.className='sdot'+(s==='loading'?' loading':s==='err'?' err':'')});['slbl','slbl2'].forEach(id=>{const d=document.getElementById(id);if(d)d.textContent=s==='loading'?'Sync...':s==='ok'?'Sincronizado':'Error'})}
@@ -5590,8 +5360,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeSettings()}
 });
 
-
-// ═══════════ EJERCICIOS INTEGRADO ═══════════
 
 // ═══════════════════════════════════════════
 // LIFEPILOT EJERCICIOS — Sistema completo

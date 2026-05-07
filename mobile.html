@@ -1253,124 +1253,6 @@ html{-webkit-overflow-scrolling:touch}
 </div>
 
 <!-- EJERCICIOS -->
-<div id="ejercicios" class="screen">
-  <div class="hdr">
-    <div class="back" onclick="goHome()">‹</div>
-    <h1>💪 Ejercicios</h1>
-    <div id="mob-ex-streak" style="margin-left:auto;font-size:11px;font-weight:700;padding:5px 11px;border-radius:100px;background:var(--org-dim);color:var(--org);border:1px solid rgba(255,159,10,.2)"></div>
-  </div>
-
-  <!-- Tabs -->
-  <div style="display:flex;gap:4px;margin-bottom:16px;background:rgba(255,255,255,.05);border-radius:12px;padding:4px">
-    <div id="mob-ex-t1" onclick="mobExTab('hoy')" style="flex:1;padding:8px 4px;border-radius:9px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.1);color:var(--tx)">Hoy</div>
-    <div id="mob-ex-t2" onclick="mobExTab('historial')" style="flex:1;padding:8px 4px;border-radius:9px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;color:var(--tx3)">Historial</div>
-    <div id="mob-ex-t3" onclick="mobExTab('programa')" style="flex:1;padding:8px 4px;border-radius:9px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;color:var(--tx3)">Programa</div>
-  </div>
-
-  <!-- HOY -->
-  <div id="mob-ex-hoy">
-    <div id="mob-day-strip" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none"></div>
-    <div id="mob-week-summary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
-    <div id="mob-workout-content"></div>
-  </div>
-
-  <!-- HISTORIAL -->
-  <div id="mob-ex-historial" style="display:none">
-    <div id="mob-history-content"></div>
-  </div>
-
-  <!-- PROGRAMA -->
-  <div id="mob-ex-programa" style="display:none">
-    <div id="mob-program-content"></div>
-  </div>
-
-</div>
-
-
-<div id="ocio" class="screen">
-  <div class="hdr"><div class="back" onclick="goHome()">‹</div><h1>🎬 Ocio</h1></div>
-  <div style="padding:8px 0">
-    <a href="ocio.html" style="
-      display:flex;align-items:center;justify-content:center;gap:10px;
-      padding:20px;border-radius:22px;
-      background:linear-gradient(135deg,rgba(231,76,60,.12),rgba(155,89,182,.08));
-      border:1px solid rgba(231,76,60,.2);
-      font-size:17px;font-weight:800;color:#fff;
-      text-decoration:none;margin-bottom:12px;
-    ">🎬 Abrir Ocio →</a>
-  </div>
-  <div id="ocio-home-preview"></div>
-</div>
-
-
-<div id="ia" class="screen">
-  <div class="hdr"><div class="back" onclick="goHome()">‹</div><h1>✨ IA</h1></div>
-
-  <!-- Tabs -->
-  <div style="display:flex;gap:5px;margin-bottom:18px;background:rgba(255,255,255,.05);border-radius:14px;padding:4px">
-    <div id="m-ia-t1" onclick="mIaTab(1)" style="flex:1;padding:9px 4px;border-radius:11px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.1);color:var(--tx)">📊</div>
-    <div id="m-ia-t2" onclick="mIaTab(2)" style="flex:1;padding:9px 4px;border-radius:11px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;color:var(--tx3)">🏆 Coach</div>
-    <div id="m-ia-t3" onclick="mIaTab(3)" style="flex:1;padding:9px 4px;border-radius:11px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;color:var(--tx3)">🧠</div>
-    <div id="m-ia-t4" onclick="mIaTab(4)" style="flex:1;padding:9px 4px;border-radius:11px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;color:var(--tx3)">📈 €</div>
-  </div>
-
-  <!-- Panel 1: Dashboard -->
-  <div id="m-ia-p1">
-    <div class="slbl">Tu perfil acumulado</div>
-    <div id="m-profile-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px"></div>
-    <div class="slbl">Esta semana</div>
-    <div id="m-week-dots" style="margin-bottom:16px"></div>
-    <div class="slbl">Check-in de hoy</div>
-    <div id="m-checkin" style="margin-bottom:16px"></div>
-    <div class="slbl">Predicciones</div>
-    <div id="m-predicciones" style="margin-bottom:16px"></div>
-    <div class="slbl">Compromisos</div>
-    <div id="m-compromisos"></div>
-  </div>
-
-  <!-- Panel 2: Coach -->
-  <div id="m-ia-p2" style="display:none">
-    <div class="card" id="m-coach-content">
-      <div style="font-size:13px;color:var(--tx2);padding:8px 0">Cargando coach...</div>
-    </div>
-  </div>
-
-  <!-- Panel 3: Patrones -->
-  <div id="m-ia-p3" style="display:none">
-    <div class="card" style="margin-bottom:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="font-size:14px;font-weight:700">🔍 Correlaciones</div>
-        <div onclick="mGenCorrelaciones()" style="font-size:12px;color:var(--pur);cursor:pointer;font-weight:600">↻ Analizar</div>
-      </div>
-      <div id="m-correlaciones"><div style="font-size:13px;color:var(--tx3);padding:8px 0">Toca ↻ para analizar tus datos.</div></div>
-    </div>
-    <div class="card" id="m-pattern-content">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="font-size:14px;font-weight:700">🧠 Patrones</div>
-        <div onclick="mGenPatrones()" style="font-size:12px;color:var(--pur);cursor:pointer;font-weight:600">↻ Analizar</div>
-      </div>
-      <div id="m-patrones-content"><div style="font-size:13px;color:var(--tx2);padding:8px 0">Cruzando datos...</div></div>
-    </div>
-  </div>
-
-  <!-- Panel 4: Finanzas -->
-  <div id="m-ia-p4" style="display:none">
-    <div class="card" style="margin-bottom:12px">
-      <div style="font-size:14px;font-weight:700;margin-bottom:12px">📈 Proyección patrimonio</div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-        <div><div style="font-size:11px;color:var(--tx3);margin-bottom:4px">Patrimonio actual (€)</div>
-          <input id="m-proy-p" type="number" value="14952" style="width:100%;padding:11px 14px;border-radius:100px;background:rgba(255,255,255,.07);border:1px solid var(--brd);color:var(--tx);font-size:15px;font-family:var(--f);outline:none"></div>
-        <div><div style="font-size:11px;color:var(--tx3);margin-bottom:4px">Ahorro mensual (€)</div>
-          <input id="m-proy-a" type="number" value="500" style="width:100%;padding:11px 14px;border-radius:100px;background:rgba(255,255,255,.07);border:1px solid var(--brd);color:var(--tx);font-size:15px;font-family:var(--f);outline:none"></div>
-        <div><div style="font-size:11px;color:var(--tx3);margin-bottom:4px">Rentabilidad anual (%)</div>
-          <input id="m-proy-r" type="number" value="7" step="0.5" style="width:100%;padding:11px 14px;border-radius:100px;background:rgba(255,255,255,.07);border:1px solid var(--brd);color:var(--tx);font-size:15px;font-family:var(--f);outline:none"></div>
-      </div>
-      <button onclick="mCalcProyeccion()" style="width:100%;padding:14px;border-radius:100px;background:var(--grn);border:none;color:#000;font-family:var(--f);font-size:15px;font-weight:800;cursor:pointer">Calcular →</button>
-    </div>
-    <div id="m-proy-result"></div>
-  </div>
-
-</div>
 
 <div id="calendario" class="screen">
   <div class="hdr">
@@ -5150,6 +5032,9 @@ const MOB_RENDER = {'home':'rHome','nutricion':'rNut','ejercicios':'rEx','ocio':
 const MOB_NAV_MAP = {'home':'mn-home','nutricion':'mn-nutricion','ejercicios':'mn-ejercicios','ia':'mn-ia','ocio':'mn-more','tareas':'mn-more','kira':'mn-more','planes':'mn-more','aprender':'mn-more','ajustes':'mn-more','calendario':'mn-more','diario':'mn-more'};
 
 function go(id){
+  // Ejercicios va siempre a ejercicios.html (la versión buena)
+  if(id==='ejercicios'){location.href='ejercicios.html';return;}
+
   // Hide more menu
   const overlay=document.getElementById('more-nav-overlay');
   const sheet=document.getElementById('more-nav-sheet');
