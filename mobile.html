@@ -1327,8 +1327,19 @@ html{-webkit-overflow-scrolling:touch}
 
   <!-- Panel 3: Patrones -->
   <div id="m-ia-p3" style="display:none">
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:700">🔍 Correlaciones</div>
+        <div onclick="mGenCorrelaciones()" style="font-size:12px;color:var(--pur);cursor:pointer;font-weight:600">↻ Analizar</div>
+      </div>
+      <div id="m-correlaciones"><div style="font-size:13px;color:var(--tx3);padding:8px 0">Toca ↻ para analizar tus datos.</div></div>
+    </div>
     <div class="card" id="m-pattern-content">
-      <div style="font-size:13px;color:var(--tx2);padding:8px 0">Cruzando datos...</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:14px;font-weight:700">🧠 Patrones</div>
+        <div onclick="mGenPatrones()" style="font-size:12px;color:var(--pur);cursor:pointer;font-weight:600">↻ Analizar</div>
+      </div>
+      <div id="m-patrones-content"><div style="font-size:13px;color:var(--tx2);padding:8px 0">Cruzando datos...</div></div>
     </div>
   </div>
 
@@ -1423,25 +1434,27 @@ html{-webkit-overflow-scrolling:touch}
   </div>
 
   <!-- API KEY IA -->
-  <div class="sec-label">🤖 IA — API Key</div>
+  <div class="sec-label">🤖 IA — API Keys</div>
   <div class="card" style="padding:14px">
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-      <select id="m-ai-provider" onchange="mSaveAIProvider()" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--tx);font-size:13px;font-weight:600;flex:1">
-        <option value="gemini">Gemini (recomendado)</option>
-        <option value="groq">Groq (Llama)</option>
-      </select>
-      <span id="m-ai-key-status" style="font-size:10px;font-weight:700;padding:5px 9px;border-radius:10px;background:rgba(255,255,255,.08);color:var(--tx3)">—</span>
+    <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:6px">🔑 Groq — rápido y frecuente</div>
+    <div style="display:flex;gap:8px;margin-bottom:4px">
+      <input type="password" id="m-groq-key-input" placeholder="gsk_..." style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--tx);font-size:13px;font-family:monospace" oninput="document.getElementById('m-groq-key-save').style.display='inline-block'">
+      <button id="m-groq-key-save" onclick="mSaveGroqKey()" style="display:none;padding:10px 13px;border-radius:10px;background:var(--pur);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">💾</button>
+      <span id="m-groq-key-status" style="font-size:10px;font-weight:700;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.08);color:var(--tx3);align-self:center">—</span>
     </div>
-    <input type="password" id="m-ai-key-input" placeholder="Pega tu API key aquí..." style="width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--tx);font-size:13px;font-family:monospace;box-sizing:border-box;margin-bottom:10px" oninput="document.getElementById('m-ai-key-save').style.display='inline-block'">
-    <div style="display:flex;gap:8px;align-items:center">
-      <button id="m-ai-key-save" onclick="mSaveAIKey()" style="display:none;padding:9px 16px;border-radius:8px;background:var(--pur);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">💾 Guardar</button>
-      <button onclick="mClearAIKey()" style="padding:9px 14px;border-radius:8px;background:transparent;color:var(--red);border:1px solid var(--red);font-size:12px;font-weight:600;cursor:pointer">Borrar</button>
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:12px">Gratis: <a href="https://console.groq.com/keys" target="_blank" style="color:var(--pur)">console.groq.com/keys</a> · 30 req/min</div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:6px">🔑 Gemini — análisis semanal</div>
+    <div style="display:flex;gap:8px;margin-bottom:4px">
+      <input type="password" id="m-ai-key-input" placeholder="AIza..." style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--tx);font-size:13px;font-family:monospace" oninput="document.getElementById('m-ai-key-save').style.display='inline-block'">
+      <button id="m-ai-key-save" onclick="mSaveAIKey()" style="display:none;padding:10px 13px;border-radius:10px;background:var(--pur);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer">💾</button>
+      <span id="m-ai-key-status" style="font-size:10px;font-weight:700;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.08);color:var(--tx3);align-self:center">—</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <button onclick="mClearAIKey()" style="padding:8px 12px;border-radius:8px;background:transparent;color:var(--red);border:1px solid var(--red);font-size:12px;font-weight:600;cursor:pointer">Borrar todo</button>
       <span id="m-ai-key-msg" style="font-size:11px;color:var(--grn);margin-left:auto"></span>
     </div>
-    <div style="font-size:11px;color:var(--tx3);margin-top:10px;line-height:1.5">
-      Crea key gratis: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--pur)">aistudio.google.com/apikey</a> (Gemini) o <a href="https://console.groq.com/keys" target="_blank" style="color:var(--pur)">console.groq.com/keys</a> (Groq).<br>
-      <em>La key solo vive en tu navegador.</em>
-    </div>
+    <div style="font-size:11px;color:var(--tx3);line-height:1.5">Gratis: <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--pur)">aistudio.google.com/apikey</a> · 15 req/min<br><em>Las keys solo viven en tu navegador.</em></div>
   </div>
 
   <!-- NOTIFICACIONES -->
@@ -1534,11 +1547,51 @@ html{-webkit-overflow-scrolling:touch}
 const MACRO_TARGETS={laborable:{kcal:1950,prot:150,carbs:185,grasas:62,label:'Laborable',color:'var(--blu)'},padel:{kcal:2250,prot:155,carbs:235,grasas:65,label:'Pádel',color:'var(--org)'},descanso:{kcal:1800,prot:150,carbs:155,grasas:65,label:'Descanso',color:'var(--pur)'}};
 const FOOD_DB={'huevo':{kcal:70,prot:6,carbs:0.5,grasas:5},'pechuga':{kcal:110,prot:23,carbs:0,grasas:1.5},'pavo':{kcal:109,prot:22,carbs:0,grasas:2},'jamon york':{kcal:107,prot:15,carbs:2,grasas:4},'salmon':{kcal:208,prot:20,carbs:0,grasas:13},'atun':{kcal:130,prot:28,carbs:0,grasas:1},'yogur griego':{kcal:100,prot:10,carbs:4,grasas:5},'avena':{kcal:380,prot:13,carbs:65,grasas:7},'arroz':{kcal:360,prot:7,carbs:78,grasas:1},'pasta':{kcal:350,prot:12,carbs:71,grasas:2},'pan':{kcal:80,prot:3,carbs:15,grasas:1},'platano':{kcal:90,prot:1,carbs:22,grasas:0},'frutos secos':{kcal:175,prot:5,carbs:5,grasas:16},'lomo':{kcal:145,prot:21,carbs:0,grasas:6},'ternera':{kcal:180,prot:20,carbs:0,grasas:10},'merluza':{kcal:90,prot:18,carbs:0,grasas:1.5}};
 let nutDayType=(()=>{const d=new Date().getDay();return d===1||d===3?'padel':d===6||d===0?'descanso':'laborable'})();
-// AI key from localStorage (configured in Settings)
 function getAIKey(){return localStorage.getItem('lp_ai_key')||''}
-function getAIProvider(){return localStorage.getItem('lp_ai_provider')||'gemini'}
-function hasAIKey(){return getAIKey().length > 10}
-const GROQ_KEY=''; // Legacy
+function getGroqKey(){return localStorage.getItem('lp_groq_key')||''}
+function hasAIKey(){return getAIKey().length>10}
+function hasGroqKey(){return getGroqKey().length>10}
+function safeJsonParse(txt,fallback={}){
+  const clean=(txt||'').replace(/```json|```/g,'').trim();
+  try{return JSON.parse(clean)}catch(e){
+    let s=clean;
+    const q=(s.match(/"/g)||[]).length;if(q%2!==0)s+='"';
+    const o=(s.match(/\{/g)||[]).length-(s.match(/\}/g)||[]).length;
+    const a=(s.match(/\[/g)||[]).length-(s.match(/\]/g)||[]).length;
+    s=s.replace(/,\s*$/,'');
+    for(let i=0;i<a;i++)s+=']';for(let i=0;i<o;i++)s+='}';
+    try{return JSON.parse(s)}catch(e2){return fallback}
+  }
+}
+function getAIProvider(){return 'gemini'}
+// Cola de peticiones IA
+const _mAIQ=[];let _mAIRunning=false;
+function _mEnqueue(fn){return new Promise((res,rej)=>{_mAIQ.push({fn,res,rej});_mDrain()})}
+async function _mDrain(){if(_mAIRunning||!_mAIQ.length)return;_mAIRunning=true;const{fn,res,rej}=_mAIQ.shift();try{res(await fn())}catch(e){rej(e)}finally{_mAIRunning=false;if(_mAIQ.length)setTimeout(_mDrain,400)}}
+async function _mDoFetch(endpoint,model,key,max_tokens,temperature,prompt){
+  const body=JSON.stringify({model,max_tokens,temperature,messages:[{role:'user',content:prompt}]});
+  const delays=[0,3000,8000];
+  for(let i=0;i<3;i++){
+    if(delays[i])await new Promise(r=>setTimeout(r,delays[i]));
+    try{
+      const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body});
+      if(r.status===503||r.status===429){console.warn(model+' '+r.status+', reintentando...');continue;}
+      if(r.status===401||r.status===403)throw new Error('API key inválida');
+      if(!r.ok){const e=await r.text();throw new Error('Error '+r.status+': '+e.substring(0,80));}
+      const d=await r.json();return d.choices?.[0]?.message?.content||'{}';
+    }catch(e){if(e.message.includes('inválida'))throw e;}
+  }
+  throw new Error('IA no disponible. Inténtalo de nuevo.');
+}
+function mFetchAI(max_tokens,temperature,prompt){
+  if(hasGroqKey())return _mEnqueue(()=>_mDoFetch('https://api.groq.com/openai/v1/chat/completions','llama-3.1-8b-instant',getGroqKey(),max_tokens,temperature,prompt));
+  if(hasAIKey())return _mEnqueue(()=>_mDoFetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions','gemini-2.0-flash',getAIKey(),max_tokens,temperature,prompt));
+  throw new Error('NO_KEY');
+}
+function mFetchGemini(max_tokens,temperature,prompt){
+  if(!hasAIKey())throw new Error('NO_KEY');
+  return _mEnqueue(()=>_mDoFetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions','gemini-2.0-flash',getAIKey(),max_tokens,temperature,prompt));
+}
 const NI=[
   {id:'desayuno',t:'Bocadillo de pavo / jamón york',s:'Desayuno — ~300 kcal · 22g prot'},
   {id:'frutos',t:'Puñado de frutos secos (30g)',s:'Media mañana — 175 kcal · 16g grasa'},
@@ -2399,19 +2452,8 @@ Da un consejo MUY ESPECÍFICO y PRÁCTICO en 3-4 frases sobre:
 
 Responde en español, directo, como un entrenador real. Sin listas ni bullets, texto continuo.`;
   try{
-    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:180,temperature:0.4,messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const txt=data.choices?.[0]?.message?.content||'';
+    const _txt_=await mFetchAI(180,0.4,prompt);
+    const txt=_txt_;
     el.innerHTML=`<div style="font-size:13px;color:var(--tx2);line-height:1.65">${txt}</div>`;
     if(btn){btn.textContent='🤖 Actualizar consejo IA';btn.disabled=false}
   
@@ -2487,18 +2529,8 @@ async function mobExFinishWorkout(){
       const prompt=`Entrenador personal. Daniel ha completado su entrenamiento de ${prog.tipo} (${prog.grupos.join(', ')}). Ha hecho ${totalSeries} series en total. Peso máximo usado: ${maxPeso}kg. Lleva entrenando poco tiempo con mancuernas en casa, objetivo: recomposición corporal.
 
 Escribe un mensaje de cierre motivador y ÚTIL en 2-3 frases. Incluye: qué hacer las próximas horas para maximizar la recuperación (proteína, agua, sueño). Sé específico y personal. Nada de frases vacías de gym.`;
-      const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
-        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-        body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:150,temperature:0.5,messages:[{role:'user',content:prompt}]})
-      });
-      if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-      aiEl.innerHTML='<div style="font-size:14px;line-height:1.65">'+( data.choices?.[0]?.message?.content||'')+'</div>';
+      const txt=await mFetchAI(150,0.5,prompt);
+      aiEl.innerHTML='<div style="font-size:14px;line-height:1.65">'+txt+'</div>';
     }catch(e){aiEl.style.display='none'}
   }
 }
@@ -2685,10 +2717,10 @@ function doAdd(){
   const v=document.getElementById('addinput').value.trim();if(!v||!addCtx)return;
   const t=addCtx.type;
   if(t==='ocio'){const i=gls('ocio_'+addCtx.listId,defList(addCtx.listId));i.unshift({name:v,done:false});sls('ocio_'+addCtx.listId,i);renderOcioList(addCtx.listId)}
-  else if(t==='aprender'){const i=gls('aprender',[{name:'Spicy4tuna (podcast)',done:false}]);i.unshift({name:v,done:false});sls('aprender',i);rApr()}
+  else if(t==='aprender'){const i=gls('aprender',[{name:'Spicy4tuna (podcast)',done:false}]);i.unshift({name:v,done:false});sls('aprender',i);if(window.fbSaveAprender)window.fbSaveAprender(i);rApr()}
   else if(t==='yt_add'){addYTCh();return}
   else if(t==='tarea'){addTask(v,{hoy:'Hoy',proxima:'Próxima',alguna:'Algún día'}[taskTab]||'Hoy');document.getElementById('addinput').value='';return}
-  else if(t==='kira'){const i=gls('kira_ideas',[]);i.unshift({name:v,done:false});sls('kira_ideas',i);rKira()}
+  else if(t==='kira'){const i=gls('kira_ideas',[]);i.unshift({name:v,done:false});sls('kira_ideas',i);if(window.fbSaveKiraIdeas)window.fbSaveKiraIdeas(i);rKira()}
   else if(t==='planes'){const i=gls('planes_ideas',[]);i.unshift({name:v,done:false});sls('planes_ideas',i);rPlanes()}
   document.getElementById('addinput').value='';document.getElementById('addinput').focus();
 }
@@ -2764,15 +2796,8 @@ async function mGenBriefing(force=false){
   if(bodyEl)bodyEl.innerHTML='<span style="color:var(--tx3)">Generando briefing...</span>';
   const prompt='Eres el asistente personal de Daniel (35 años, Pedrola). Datos de hoy: '+JSON.stringify(ctx)+'. Escribe un resumen directo y útil en exactamente 2 frases completas (sin cortar). Luego 2-3 pills de acción. IMPORTANTE: las frases deben estar COMPLETAS, sin puntos suspensivos ni cortes. SOLO JSON: {"resumen":"2 frases completas aquí, sin HTML","pills":[{"icon":"emoji","texto":"texto corto","seccion":"nutricion|tareas|diario|kira"}]}';
   try{
-    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:200,temperature:0.4,messages:[{role:'user',content:prompt}]})});
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const json=JSON.parse((data.choices?.[0]?.message?.content||'{}').replace(/```json|```/g,'').trim());
+    const _txt_=await mFetchAI(200,0.4,prompt);
+    const json=safeJsonParse(_txt_);
     sls('briefing_'+d,json);mRenderBriefing(json);
   }catch(e){if(bodyEl)bodyEl.innerHTML='<span style="color:var(--tx2)">Hola Daniel, buen día 👋</span>'}
 }
@@ -2796,15 +2821,8 @@ async function mGenCoach(){
   for(let i=6;i>=0;i--){const dt=new Date(now);dt.setDate(dt.getDate()-i);const k=dt.toISOString().slice(0,10);const nutCheck=gls('nutri_'+k,{});const nutDone=NI.filter(x=>nutCheck[x.id]).length;const foodLog=gls('food_log_'+k,[]);let prot=0;foodLog.forEach(e=>{prot+=e.prot||0});const diario=gls('diary_'+k,null);const agua=gls('water_'+k,0);dias.push({nutDone,prot:Math.round(prot),mood:diario?.mood||null,aguaMl:agua})}
   const profile=getDanielProfileSummary();const profileCtx=profileToGroqContext(profile);const prompt='Eres el coach personal de Daniel. HISTORIAL ACUMULADO:\n'+profileCtx+'\n\nDATOS SEMANA ACTUAL: '+JSON.stringify(dias)+'. Genera 3-4 insights concretos. SOLO JSON: {"insights":[{"icon":"...","tipo":"logro|alerta|consejo","titulo":"...","descripcion":"1-2 frases","badge":"..."}],"recomendacion_semana":"..."}';
   try{
-    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.3-70b-versatile':'gemini-2.5-flash'),max_tokens:400,temperature:0.3,messages:[{role:'user',content:prompt}]})});
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const json=JSON.parse((data.choices?.[0]?.message?.content||'{}').replace(/```json|```/g,'').trim());
+    const _txt_=await mFetchGemini(400,0.3,prompt);
+    const json=safeJsonParse(_txt_);
     let h='';
     (json.insights||[]).forEach(ins=>{const colors={logro:'var(--grn)',alerta:'var(--red)',consejo:'var(--blu)'};const col=colors[ins.tipo]||'var(--pur)';h+=`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:18px">${ins.icon}</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">${ins.titulo}</div><div style="font-size:12px;color:var(--tx2);margin-top:2px;line-height:1.45">${ins.descripcion}</div></div><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,.06);color:${col};flex-shrink:0">${ins.badge}</span></div>`});
     if(json.recomendacion_semana)h+=`<div style="margin-top:10px;padding:10px;background:rgba(255,214,10,.06);border-radius:10px;font-size:12px;color:var(--yel)">🎯 ${json.recomendacion_semana}</div>`;
@@ -2812,22 +2830,40 @@ async function mGenCoach(){
   }catch(e){el.innerHTML='<div style="font-size:13px;color:var(--tx2)">Error al generar análisis.</div>'}
 }
 
+
+async function mGenCorrelaciones(){
+  const el=document.getElementById('m-correlaciones');if(!el)return;
+  el.innerHTML='<div style="font-size:13px;color:var(--tx3)">Analizando correlaciones...</div>';
+  const now=new Date(),datos=[];
+  for(let i=29;i>=0;i--){
+    const dt=new Date(now);dt.setDate(dt.getDate()-i);const k=dt.toISOString().slice(0,10);
+    const diario=gls('diary_'+k,null);const foodLog=gls('food_log_'+k,[]);
+    let prot=0;foodLog.forEach(e=>{prot+=e.prot||0});
+    const agua=gls('water_'+k,0);const meds=gls('meds_'+k,{am:false});
+    const checkin=gls('checkin_'+k,null);
+    if(diario)datos.push({fecha:k,mood:diario.mood,prot:Math.round(prot),aguaMl:agua,medAm:meds.am,energia:checkin?.energia||null,sueno:checkin?.sueno||null});
+  }
+  if(datos.length<7){el.innerHTML='<div style="font-size:13px;color:var(--tx3)">Necesitas al menos 7 días de datos. Sigue registrando.</div>';return}
+  const prompt='Psicólogo y coach de salud. Analiza correlaciones REALES en estos datos de Daniel (últimos 30 días): '+JSON.stringify(datos)+'. SOLO JSON: {"correlaciones":[{"emoji":"...","titulo":"máx 7 palabras","descripcion":"1-2 frases con datos reales","tipo":"positiva|negativa|neutra","confianza":"alta|media|baja"}],"insight_global":"observación general"}';
+  try{
+    const json=safeJsonParse(await mFetchGemini(400,0.2,prompt));
+    const colors={positiva:'var(--grn)',negativa:'var(--red)',neutra:'var(--blu)'};
+    let h='';
+    (json.correlaciones||[]).forEach(c=>{const col=colors[c.tipo]||'var(--pur)';h+=`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:20px">${c.emoji}</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">${c.titulo}</div><div style="font-size:12px;color:var(--tx2);margin-top:2px;line-height:1.45">${c.descripcion}</div></div><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.06);color:${col}">${c.confianza}</span></div>`;});
+    if(json.insight_global)h+=`<div style="margin-top:10px;padding:10px;background:rgba(59,130,246,.06);border-radius:10px;font-size:12px;color:var(--blu);line-height:1.5">🔍 ${json.insight_global}</div>`;
+    el.innerHTML=h||'<div style="font-size:13px;color:var(--tx3)">Sin correlaciones detectadas aún.</div>';
+  }catch(e){el.innerHTML='<div style="font-size:13px;color:var(--tx2)">Error al analizar.</div>'}
+}
+
 async function mGenPatrones(){
-  const el=document.getElementById('m-pattern-content');if(!el)return;
+  const el=document.getElementById('m-patrones-content');if(!el)return;
   const now=new Date(),datos=[];
   for(let i=29;i>=0;i--){const dt=new Date(now);dt.setDate(dt.getDate()-i);const k=dt.toISOString().slice(0,10);const diario=gls('diary_'+k,null);const foodLog=gls('food_log_'+k,[]);let prot=0;foodLog.forEach(e=>{prot+=e.prot||0});const agua=gls('water_'+k,0);if(diario)datos.push({mood:diario.mood,prot:Math.round(prot),aguaMl:agua})}
   if(datos.length<5){el.innerHTML='<div style="font-size:13px;color:var(--tx3)">Necesitas al menos 5 días de diario. Sigue registrando.</div>';return}
   const prompt='Analiza correlaciones entre estado ánimo y hábitos de Daniel. Datos (mood, proteína g, agua ml): '+JSON.stringify(datos)+'. SOLO JSON: {"patrones":[{"emoji":"...","titulo":"máx 6 palabras","descripcion":"1-2 frases","confianza":"alta|media|baja"}],"conclusion":"..."}';
   try{
-    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.3-70b-versatile':'gemini-2.5-flash'),max_tokens:400,temperature:0.2,messages:[{role:'user',content:prompt}]})});
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const json=JSON.parse((data.choices?.[0]?.message?.content||'{}').replace(/```json|```/g,'').trim());
+    const _txt_=await mFetchGemini(400,0.2,prompt);
+    const json=safeJsonParse(_txt_);
     let h='';
     (json.patrones||[]).forEach(p=>{h+=`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:20px">${p.emoji}</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">${p.titulo}</div><div style="font-size:12px;color:var(--tx2);margin-top:2px;line-height:1.45">${p.descripcion}</div></div><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.06);color:var(--tx3)">${p.confianza}</span></div>`});
     if(json.conclusion)h+=`<div style="margin-top:10px;padding:10px;background:rgba(191,90,242,.06);border-radius:10px;font-size:12px;color:var(--pur);line-height:1.5">💜 ${json.conclusion}</div>`;
@@ -2851,7 +2887,7 @@ function mIaTab(n){
     if(p)p.style.display=i===n?'block':'none';
   }
   if(n===2)mGenCoach();
-  if(n===3)mGenPatrones();
+  if(n===3){mGenCorrelaciones();mGenPatrones();}
   if(n===4)mCalcProyeccion();
 }
 
@@ -2958,15 +2994,8 @@ async function mGenPredicciones(profile){
   const avgKcal=dias7.length?Math.round(dias7.reduce((a,d)=>a+d.kcal,0)/dias7.length):0;
   const prompt='Coach nutrición deportiva. Predicciones para Daniel (35 años, recomposición). Datos: proteína '+profile.protMedia+'g/día, agua '+(profile.aguaMedia/1000).toFixed(1)+'L, peso '+profile.pesoActual+'kg tendencia '+profile.tendencia+'kg/sem, déficit medio kcal '+(2100-avgKcal)+'/día, '+(profile.pctProtOk)+'% días con objetivo proteína. SOLO JSON: {"predicciones":[{"emoji":"...","titulo":"predicción corta","valor":"ej: -0.3kg","plazo":"esta semana","descripcion":"cómo","accion":"qué hacer"}],"resumen":"frase estado actual"}';
   try{
-    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.3-70b-versatile':'gemini-2.5-flash'),max_tokens:350,temperature:0.2,messages:[{role:'user',content:prompt}]})});
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const json=JSON.parse((data.choices?.[0]?.message?.content||'{}').replace(/```json|```/g,'').trim());
+    const _txt_=await mFetchGemini(350,0.2,prompt);
+    const json=safeJsonParse(_txt_);
     let h='';
     if(json.resumen)h+=`<div style="padding:12px 14px;background:rgba(44,126,255,.08);border:1px solid rgba(44,126,255,.12);border-radius:14px;font-size:13px;color:rgba(255,255,255,.6);margin-bottom:10px">${json.resumen}</div>`;
     (json.predicciones||[]).forEach(p=>{
@@ -3184,13 +3213,7 @@ RESPUESTAS DE ESTA SEMANA:
 Genera un análisis de coach real. Conecta lo que dice con sus datos reales. Sé directo y concreto. Máximo 4-5 frases. Sin JSON, solo texto.`;
 
   try{
-    const res = await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.3-70b-versatile':'gemini-2.5-flash'),max_tokens:200,temperature:0.4,messages:[{role:'user',content:prompt}]})
-    });
-    const data = await res.json();
-    const analysis = data.choices?.[0]?.message?.content?.trim()||'';
+    const analysis = (await mFetchGemini(200,0.4,prompt)).trim()||'';
 
     // Update profile after review
     buildDanielProfile();
@@ -3967,8 +3990,8 @@ async function mFoodSearch(query){
     const res=await fetch(url,{headers:{'User-Agent':'LifePilot/2.0'}});
     if(!res.ok){
       const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
+      console.error('API '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key inválida':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -4003,15 +4026,8 @@ async function mFoodSearch(query){
         data={choices:[{message:{content:JSON.stringify(_fcached.data)}}]};
         res={ok:true};
       } else {
-        res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:250,temperature:0.1,messages:[{role:'user',content:prompt}]})});
-      if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();}
-      const groqItems=JSON.parse((data.choices?.[0]?.message?.content||'[]').replace(/```json|```/g,'').trim());
+        const _aiTxt=await mFetchAI(250,0.1,prompt);
+      const groqItems=safeJsonParse(_aiTxt,[]);
       if(!_fcached){try{localStorage.setItem('lp_groq_'+_fkey,JSON.stringify({_ts:Date.now(),data:groqItems}));}catch(e){}}
       const groqRes=groqItems.map((item,i)=>({name:item.nombre||query,brand:item.marca||'',img:null,kcal100:Math.round(item.kcal_100g||0),prot100:+(item.prot_100g||0).toFixed(1),carbs100:+(item.carbs_100g||0).toFixed(1),grasas100:+(item.grasas_100g||0).toFixed(1),serving:item.porcion_tipica||null,servingQty:100,src:'groq'}));
       results=[...results,...groqRes];
@@ -4043,20 +4059,9 @@ async function mCalcWithGroq(query){
   if(resEl)resEl.innerHTML=`<div style="font-size:12px;color:var(--tx2);padding:10px;display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pur);animation:sdpulse .8s infinite"></span>Calculando macros con IA nutricionista...</div>`;
   try{
     const prompt='Eres nutricionista experto en comida española. El usuario ha comido: "'+query+'". Esto puede ser un plato preparado, comida de restaurante o casera. Estima los macros TOTALES para esa cantidad/ración descrita. Sé preciso y realista. SOLO JSON: {"nombre":"nombre claro del plato","cantidad_total":"descripción ej: 1 kebab mediano ~350g","kcal":número,"proteinas_g":número,"carbohidratos_g":número,"grasas_g":número,"nota":"explicación de cómo lo has calculado"}';
-    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:200,temperature:0.1,messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const txt=data.choices?.[0]?.message?.content||'{}';
-    const json=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    const _txt_=await mFetchAI(200,0.1,prompt);
+    const txt=_txt_;
+    const json=safeJsonParse(txt);
     const entry={
       name:json.nombre||query,
       cantidad:json.cantidad_total||'',
@@ -4462,7 +4467,7 @@ function dOcio(lid,i){const items=gls('ocio_'+lid,[]);items.splice(i,1);sls('oci
 function deletePlan(i){const p=gls('planes',[]);p.splice(i,1);sls('planes',p);rPlanes()}
 
 // ══ APRENDER ══
-function deleteApr(i){const a=gls('aprender_items',[]);a.splice(i,1);sls('aprender_items',a);rApr()}
+function deleteApr(i){const a=gls('aprender',[]);a.splice(i,1);sls('aprender',a);rApr()}
 
 // ══ DIARIO ══  
 function rDiario(){
@@ -4579,39 +4584,35 @@ function clearTodayCache(){
 
 
 function mRenderAIKeyStatus(){
-  const provider=getAIProvider();
-  const sel=document.getElementById('m-ai-provider');
-  if(sel)sel.value=provider;
-  const status=document.getElementById('m-ai-key-status');
-  const input=document.getElementById('m-ai-key-input');
-  if(input){input.value=getAIKey();input.placeholder=provider==='gemini'?'Pega tu key Gemini (AIza...)':'Pega tu key Groq (gsk_...)';}
-  if(status){
-    if(hasAIKey()){status.textContent='✓ OK';status.style.background='rgba(34,197,94,.15)';status.style.color='var(--grn)';}
-    else{status.textContent='Sin key';status.style.background='rgba(245,158,11,.15)';status.style.color='var(--org)';}
-  }
+  const sg=document.getElementById('m-groq-key-status'),ig=document.getElementById('m-groq-key-input');
+  if(ig)ig.value=getGroqKey();
+  if(sg){if(hasGroqKey()){sg.textContent='✓';sg.style.background='rgba(34,197,94,.15)';sg.style.color='var(--grn)';}else{sg.textContent='—';sg.style.background='rgba(255,255,255,.08)';sg.style.color='var(--tx3)';}}
+  const si=document.getElementById('m-ai-key-status'),ii=document.getElementById('m-ai-key-input');
+  if(ii)ii.value=getAIKey();
+  if(si){if(hasAIKey()){si.textContent='✓';si.style.background='rgba(34,197,94,.15)';si.style.color='var(--grn)';}else{si.textContent='—';si.style.background='rgba(255,255,255,.08)';si.style.color='var(--tx3)';}}
+}
+function mSaveGroqKey(){
+  const v=(document.getElementById('m-groq-key-input')?.value||'').trim();
+  if(v.length<10){alert('Key demasiado corta.');return;}
+  localStorage.setItem('lp_groq_key',v);
+  document.getElementById('m-groq-key-save').style.display='none';
+  const msg=document.getElementById('m-ai-key-msg');
+  if(msg){msg.textContent='✓ Groq guardada';setTimeout(()=>{msg.textContent=''},3000);}
+  mRenderAIKeyStatus();
 }
 function mSaveAIKey(){
-  const input=document.getElementById('m-ai-key-input');
-  const key=(input?.value||'').trim();
-  if(key.length<10){alert('Esa key parece corta. Verifica.');return;}
-  localStorage.setItem('lp_ai_key',key);
+  const v=(document.getElementById('m-ai-key-input')?.value||'').trim();
+  if(v.length<10){alert('Key demasiado corta.');return;}
+  localStorage.setItem('lp_ai_key',v);
   document.getElementById('m-ai-key-save').style.display='none';
   const msg=document.getElementById('m-ai-key-msg');
-  if(msg){msg.textContent='✓ Guardada';setTimeout(()=>{msg.textContent=''},3000);}
-  mRenderAIKeyStatus();
-  Object.keys(localStorage).filter(k=>k.startsWith('lp_ai_')||k.startsWith('lp_groq_')).forEach(k=>{
-    if(k!=='lp_ai_key'&&k!=='lp_ai_provider')localStorage.removeItem(k);
-  });
-}
-function mSaveAIProvider(){
-  const sel=document.getElementById('m-ai-provider');
-  if(!sel)return;
-  localStorage.setItem('lp_ai_provider',sel.value);
+  if(msg){msg.textContent='✓ Gemini guardada';setTimeout(()=>{msg.textContent=''},3000);}
   mRenderAIKeyStatus();
 }
+function mSaveAIProvider(){}
 function mClearAIKey(){
   if(!confirm('¿Borrar la API key?'))return;
-  localStorage.removeItem('lp_ai_key');
+  localStorage.removeItem('lp_ai_key');localStorage.removeItem('lp_groq_key');
   const input=document.getElementById('m-ai-key-input');
   if(input)input.value='';
   mRenderAIKeyStatus();
@@ -4974,6 +4975,7 @@ function addKiraMomento(){
   const moms = gls('kira_momentos',[]);
   moms.unshift({texto:v, fecha:dk()});
   sls('kira_momentos', moms.slice(0,50));
+  if(window.fbSaveKiraMomentos)window.fbSaveKiraMomentos(moms.slice(0,50));
   inp.value = '';
   rKira();
   if(navigator.vibrate) navigator.vibrate(10);
@@ -5037,7 +5039,7 @@ function mobDeletePlan(i){
 function rApr(){
   const el = document.getElementById('aprender-list-mob');
   if(!el) return;
-  const items = gls('aprender_items',[]);
+  const items = gls('aprender',[]);
   if(!items.length){
     el.innerHTML = `<div style="text-align:center;padding:30px 20px">
       <div style="font-size:36px;margin-bottom:10px;opacity:.4">🧠</div>
@@ -5063,25 +5065,27 @@ function rApr(){
 function mobAddApr(){
   const inp = document.getElementById('apr-inp-mob');
   const v = inp?.value?.trim(); if(!v) return;
-  const items = gls('aprender_items',[]);
+  const items = gls('aprender',[]);
   items.unshift({titulo:v, emoji:'📚', done:false, added:dk()});
-  sls('aprender_items', items);
+  sls('aprender', items);
   inp.value = '';
   rApr();
   if(navigator.vibrate) navigator.vibrate(10);
 }
 
 function mobAprToggle(i){
-  const items = gls('aprender_items',[]);
+  const items = gls('aprender',[]);
   if(items[i]) items[i].done = !items[i].done;
-  sls('aprender_items', items);
+  sls('aprender', items);
+  if(window.fbSaveAprender)window.fbSaveAprender(items);
   rApr();
 }
 
 function mobAprDelete(i){
-  const items = gls('aprender_items',[]);
+  const items = gls('aprender',[]);
   items.splice(i,1);
-  sls('aprender_items', items);
+  sls('aprender', items);
+  if(window.fbSaveAprender)window.fbSaveAprender(items);
   rApr();
 }
 
