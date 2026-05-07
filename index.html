@@ -2065,6 +2065,25 @@ function renderMacros(){
 function getAIKey(){return localStorage.getItem('lp_ai_key')||''}
 function getAIProvider(){return localStorage.getItem('lp_ai_provider')||'gemini'}
 function hasAIKey(){return getAIKey().length > 10}
+// Intenta parsear JSON aunque venga truncado por max_tokens
+function safeJsonParse(txt,fallback={}){
+  const clean=txt.replace(/```json|```/g,'').trim();
+  try{return JSON.parse(clean)}catch(e){
+    // Intenta reparar: cerrar strings, arrays y objetos abiertos
+    let s=clean;
+    // Cierra string abierto
+    const quotes=(s.match(/"/g)||[]).length;
+    if(quotes%2!==0)s+='"';
+    // Cuenta llaves y corchetes
+    const opens=(s.match(/\{/g)||[]).length-(s.match(/\}/g)||[]).length;
+    const arrOpens=(s.match(/\[/g)||[]).length-(s.match(/\]/g)||[]).length;
+    // Elimina coma final antes de cerrar
+    s=s.replace(/,\s*$/,'');
+    for(let i=0;i<arrOpens;i++)s+=']';
+    for(let i=0;i<opens;i++)s+='}';
+    try{return JSON.parse(s)}catch(e2){return fallback}
+  }
+}
 const GROQ_KEY=''; // Legacy reference - actual key now from localStorage
 
 // ═══════════════════════════════════════════════════════
@@ -2139,7 +2158,7 @@ async function callAI(opts){
     
     const data = await res.json();
     const txt = data.choices?.[0]?.message?.content || '{}';
-    const result = jsonMode ? JSON.parse(txt.replace(/```json|```/g,'').trim()) : txt;
+    const result = jsonMode ? safeJsonParse(txt) : txt;
     
     if(cacheKey){
       localStorage.setItem('lp_ai_'+cacheKey, JSON.stringify({_ts:Date.now(), data:result}));
@@ -2248,7 +2267,7 @@ async function foodSearch(){
   if(resEl)resEl.innerHTML=`<div class="food-searching"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pur);animation:sdpulse .8s infinite"></span>${offResults.length?'Ampliando con IA...':'Sin resultados en OFF, usando IA nutricionista...'}</div>`;
   try{
     const prompt='Nutricionista experto en alimentación española. El usuario busca: "'+query+'". Genera 4 variantes con macros precisos POR 100G. Productos típicos de España/Mercadona. SOLO JSON array: [{"nombre":"...","marca":"...","kcal_100g":n,"prot_100g":n,"carbs_100g":n,"grasas_100g":n,"porcion_tipica":"ej: 200ml, 1 filete 120g"}]';
-    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:250,temperature:0.1,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:450,temperature:0.1,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
       const errBody=await res.text();
       console.error('Groq '+res.status+':',errBody);
@@ -2257,7 +2276,7 @@ async function foodSearch(){
     }
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'[]';
-    const groqItems=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    const groqItems=safeJsonParse(txt);
     const groqResults=groqItems.map((item,i)=>({id:'g'+i,name:item.nombre||query,brand:item.marca||'',img:null,kcal100:Math.round(item.kcal_100g||0),prot100:+(item.prot_100g||0).toFixed(1),carbs100:+(item.carbs_100g||0).toFixed(1),grasas100:+(item.grasas_100g||0).toFixed(1),serving:item.porcion_tipica||null,servingQty:null,src:'groq'}));
     renderFoodResults([...offResults,...groqResults].slice(0,6),query);
   }catch(e){
@@ -2296,7 +2315,7 @@ async function calcWithGroq(){
   if(el)el.innerHTML=`<div class="food-searching"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pur);animation:sdpulse .8s infinite"></span>Calculando macros de "${query}" con IA nutricionista...</div>`;
   try{
     const prompt='Eres nutricionista experto en comida española. El usuario ha comido: "'+query+'". Puede ser plato preparado, restaurante o casero. Calcula macros TOTALES para esa ración. SOLO JSON: {"nombre":"nombre del plato","cantidad_total":"ej: 1 kebab mediano ~350g","kcal":número,"proteinas_g":número,"carbohidratos_g":número,"grasas_g":número,"nota":"cómo lo calculaste"}';
-    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:200,temperature:0.1,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:350,temperature:0.1,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
       const errBody=await res.text();
       console.error('Groq '+res.status+':',errBody);
@@ -2305,7 +2324,7 @@ async function calcWithGroq(){
     }
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'{}';
-    const json=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    const json=safeJsonParse(txt);
     const entry={
       name:json.nombre||query,
       cantidad:json.cantidad_total||'',
@@ -2816,7 +2835,7 @@ Genera 1 sugerencia principal + 4 alternativas variadas. Mezcla exterior e inter
 Responde SOLO JSON sin texto extra:
 {"principal":{"emoji":"...","nombre":"...","descripcion":"descripción concreta en 1-2 frases","tipo":"exterior|casa|bici","duracion":"X min aprox","tag":"Aire libre|En casa|Bici|Cocina|Arte"},"alternativas":[{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."},{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."},{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."},{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."}]}`;
 
-    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:400,temperature:0.7,messages:[{role:'user',content:prompt}]})});
+    const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:400,temperature:0.7,messages:[{role:'user',content:prompt}]})});
     if(!res.ok){
       const errBody=await res.text();
       console.error('Groq '+res.status+':',errBody);
@@ -2825,7 +2844,7 @@ Responde SOLO JSON sin texto extra:
     }
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'{}';
-    tardeSugsD=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    tardeSugsD=safeJsonParse(txt);
     tardeLoadedTodayD=hoy;
     renderTardeSugsDesktop(tardeSugsD,tiempoEst);
   }catch(e){
@@ -3139,7 +3158,7 @@ SOLO JSON:
     }
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'{}';
-    const json=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    const json=safeJsonParse(txt);
     const areaColors={cognitivo:'var(--blu)',lenguaje:'var(--pur)',motor_grueso:'var(--org)',motor_fino:'var(--pink)',social:'var(--grn)'};
     let h='<div style="display:flex;flex-direction:column;gap:8px">';
     (json.actividades||[]).forEach(act=>{
@@ -3795,7 +3814,7 @@ Responde SOLO JSON:
     const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:250,temperature:0.4,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:600,temperature:0.4,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){
       const errBody=await res.text();
@@ -3805,7 +3824,7 @@ Responde SOLO JSON:
     }
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'{}';
-    const json=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    const json=safeJsonParse(txt);
     sls('briefing_'+d,json);
     renderBriefing(json);
   }catch(e){
@@ -3907,7 +3926,7 @@ Responde SOLO JSON:
     }
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'{}';
-    const json=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    const json=safeJsonParse(txt);
     sls(weekKey,json);
     renderCoach(json);
   
@@ -4044,7 +4063,7 @@ Responde SOLO JSON:
     }
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'{}';
-    const json=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    const json=safeJsonParse(txt);
     renderPatrones(json);
   
     try{localStorage.setItem('lp_groq_genPatrones',JSON.stringify({_ts:Date.now(),html:document.getElementById('pattern-content')?.innerHTML||''}));}catch(e){}
@@ -6346,7 +6365,7 @@ Responde en español, directo, como un entrenador real. Sin listas ni bullets, t
     const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:180,temperature:0.4,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:300,temperature:0.4,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){
       const errBody=await res.text();
@@ -6432,7 +6451,7 @@ async function exFinishWorkout(){
 Escribe un mensaje de cierre motivador y ÚTIL en 2-3 frases. Incluye: qué hacer las próximas horas para maximizar la recuperación (proteína, agua, sueño). Sé específico y personal. Nada de frases vacías de gym.`;
       const res=await fetch((getAIProvider()==='groq'?'https://api.groq.com/openai/v1/chat/completions':'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),{
         method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-        body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:150,temperature:0.5,messages:[{role:'user',content:prompt}]})
+        body:JSON.stringify({model:(getAIProvider()==='groq'?'llama-3.1-8b-instant':'gemini-2.5-flash-lite'),max_tokens:280,temperature:0.5,messages:[{role:'user',content:prompt}]})
       });
       if(!res.ok){
       const errBody=await res.text();
