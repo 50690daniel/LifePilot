@@ -257,8 +257,18 @@ window.fbFullSync = async function(){
     })(),
   ];
   await Promise.allSettled(promises);
+
+  // Cargar config de ejercicios desde Firebase y aplicar overrides a PROGRAMA
+  try{
+    const exCfg=await fbGet('config','ejercicios');
+    if(exCfg){
+      delete exCfg._ts; delete exCfg._user;
+      localStorage.setItem('lp_ex_config',JSON.stringify(exCfg));
+      applyExConfig(exCfg);
+    }
+  }catch(e){}
+
   console.log('LifePilot: Firebase sync complete');
-  // Trigger UI refresh
   if(typeof rHome==='function') rHome();
 };
 
@@ -2063,6 +2073,22 @@ function mobExGetStreak(){
 }
 
 // ── INIT ──
+// ── Aplicar configuración de ejercicios desde Firebase ──
+function applyExConfig(cfg){
+  if(!cfg||typeof cfg!=='object')return;
+  Object.values(PROGRAMA).forEach(dia=>{
+    (dia.ejercicios||[]).forEach(ex=>{
+      const c=cfg[ex.id];
+      if(!c)return;
+      if(c.video_url)ex.video_url=c.video_url;
+      if(c.series&&c.series!==ex.series)ex.series=c.series;
+      if(c.reps&&c.reps!==ex.reps)ex.reps=c.reps;
+    });
+  });
+}
+// Aplicar config guardada localmente al arrancar (antes de Firebase)
+(()=>{try{const c=JSON.parse(localStorage.getItem('lp_ex_config')||'null');if(c)applyExConfig(c);}catch(e){}})();
+
 function mobExInit(){
   // Update streak badge
   const streak=mobExGetStreak();
@@ -2222,6 +2248,14 @@ function mobExRenderWorkout(){
         <div class="ex-gif-wrap" id="gif-${ex.id}">
           <div class="ex-gif-loading"><div class="gif-spinner"></div>Cargando animación...</div>
         </div>
+
+        ${ex.video_url?`<a href="${ex.video_url}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.2);border-radius:12px;margin-bottom:10px;text-decoration:none">
+          <span style="font-size:20px">▶️</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#ff4444">Ver vídeo de referencia</div>
+            <div style="font-size:11px;color:var(--tx3)">YouTube · se abre en nueva pestaña</div>
+          </div>
+        </a>`:''}
 
         <!-- Instructions -->
         <div class="ex-instructions">
@@ -5250,7 +5284,7 @@ initNotifications();
     <div class="mob-nav-ico">🥗</div>
     <div class="mob-nav-lbl">Nutrición</div>
   </div>
-  <div class="mob-nav-item" id="mn-ejercicios" onclick="location.href='ejercicios.html'">
+  <div class="mob-nav-item" id="mn-ejercicios" onclick="go('ejercicios')">
     <div class="mob-nav-ico">💪</div>
     <div class="mob-nav-lbl">Ejercicio</div>
   </div>

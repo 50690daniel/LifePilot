@@ -1361,6 +1361,7 @@ button,
     <div id="ex-tab-hoy" onclick="exSwitchTab('hoy')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:var(--text);color:#fff">Hoy</div>
     <div id="ex-tab-historial" onclick="exSwitchTab('historial')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">Historial</div>
     <div id="ex-tab-programa" onclick="exSwitchTab('programa')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">Programa</div>
+    <div id="ex-tab-config" onclick="exSwitchTab('config')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">⚙️ Config</div>
   </div>
 
   <!-- HOY -->
@@ -1378,6 +1379,18 @@ button,
   <!-- PROGRAMA -->
   <div id="ex-panel-programa" style="display:none">
     <div id="ex-program-content"></div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="ex-panel-config" style="display:none">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6;padding:12px 14px;background:var(--surface2);border-radius:var(--r);border-left:3px solid var(--blu)">
+      💡 Los cambios que hagas aquí se sincronizan con el móvil automáticamente vía Firebase. Añade la URL del vídeo de YouTube de cada ejercicio y el móvil lo mostrará al entrenar.
+    </div>
+    <div id="ex-config-content"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button onclick="saveExConfig()" style="padding:11px 24px;border-radius:var(--r);background:var(--text);border:none;color:#fff;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer">☁️ Guardar y sincronizar</button>
+      <span id="ex-config-msg" style="font-size:12px;color:var(--grn);align-self:center"></span>
+    </div>
   </div>
 
 </div>
@@ -6404,14 +6417,97 @@ function exCloseComplete(){
 // ── TAB SWITCHING ──
 function exSwitchTab(tab){
   curTab=tab;
-  document.querySelectorAll('.ex-main-tab').forEach((t,i)=>{
-    t.classList.toggle('on',['hoy','historial','programa'][i]===tab);
+  ['hoy','historial','programa','config'].forEach(t=>{
+    const btn=document.getElementById('ex-tab-'+t);
+    const panel=document.getElementById('ex-panel-'+t);
+    if(btn) btn.style.cssText=`padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;${t===tab?'background:var(--text);color:#fff':'color:var(--text2)'}`;
+    if(panel) panel.style.display=t===tab?'block':'none';
   });
-  document.getElementById('ex-panel-hoy').style.display=tab==='hoy'?'block':'none';
-  document.getElementById('ex-panel-historial').style.display=tab==='historial'?'block':'none';
-  document.getElementById('ex-panel-programa').style.display=tab==='programa'?'block':'none';
   if(tab==='historial') renderHistory();
   if(tab==='programa') renderProgram();
+  if(tab==='config') renderExConfig();
+}
+
+// ── CONFIG TAB ──
+let _exConfig={};
+async function renderExConfig(){
+  const el=document.getElementById('ex-config-content');if(!el)return;
+  // Load current config from Firebase
+  try{const r=await fbGet('config','ejercicios');if(r)_exConfig={...(r||{})}}catch(e){}
+
+  // Get all exercises from PROGRAMA
+  const allEx=[];
+  Object.values(PROGRAMA).forEach(dia=>{
+    (dia.ejercicios||[]).forEach(ex=>{
+      if(!allEx.find(e=>e.id===ex.id)) allEx.push(ex);
+    });
+  });
+
+  const dias={lun:'Lunes',mar:'Martes',mie:'Miércoles',jue:'Jueves',vie:'Viernes',sab:'Sábado',dom:'Domingo'};
+  let html='';
+  Object.entries(PROGRAMA).forEach(([dayKey,dia])=>{
+    if(!dia.ejercicios?.length) return;
+    html+=`<div style="margin-bottom:24px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:12px">${dia.emoji||'💪'} ${dia.label} — ${dia.grupos?.join(' · ')||''}</div>`;
+    dia.ejercicios.forEach(ex=>{
+      const cfg=_exConfig[ex.id]||{};
+      const vid=cfg.video_url||'';
+      const series=cfg.series??ex.series;
+      const reps=cfg.reps??ex.reps;
+      html+=`<div style="background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:600;flex:1">${ex.nombre}</div>
+          <div style="font-size:11px;color:var(--text3)">${ex.musculos_principales?.join(', ')||''}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 120px 1fr;gap:10px;align-items:center">
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Series</div>
+            <input type="number" min="1" max="10" value="${series}" id="cfg-series-${ex.id}" style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font)">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Reps</div>
+            <input type="text" value="${reps}" id="cfg-reps-${ex.id}" style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font)">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">🎬 URL vídeo YouTube</div>
+            <div style="display:flex;gap:6px">
+              <input type="url" value="${vid}" id="cfg-vid-${ex.id}" placeholder="https://youtube.com/watch?v=..." style="flex:1;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:var(--font)">
+              ${vid?`<a href="${vid}" target="_blank" style="padding:7px 10px;border-radius:8px;background:var(--red-bg);color:var(--red);border:1px solid transparent;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap">▶ Ver</a>`:''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+
+async function saveExConfig(){
+  const btn=document.querySelector('[onclick="saveExConfig()"]');
+  const msg=document.getElementById('ex-config-msg');
+  if(btn){btn.textContent='Guardando...';btn.disabled=true;}
+
+  // Collect all values
+  const allEx=[];
+  Object.values(PROGRAMA).forEach(dia=>{(dia.ejercicios||[]).forEach(ex=>{if(!allEx.find(e=>e.id===ex.id))allEx.push(ex);})});
+
+  const config={};
+  allEx.forEach(ex=>{
+    const vid=(document.getElementById('cfg-vid-'+ex.id)?.value||'').trim();
+    const series=parseInt(document.getElementById('cfg-series-'+ex.id)?.value)||ex.series;
+    const reps=(document.getElementById('cfg-reps-'+ex.id)?.value||ex.reps).trim();
+    if(vid||series!==ex.series||reps!==ex.reps){
+      config[ex.id]={video_url:vid,series,reps};
+    }
+  });
+
+  _exConfig=config;
+  localStorage.setItem('lp_ex_config',JSON.stringify(config));
+  await fbSet('config','ejercicios',{...config,_ts:Date.now(),_user:UID});
+
+  if(btn){btn.textContent='☁️ Guardar y sincronizar';btn.disabled=false;}
+  if(msg){msg.textContent='✅ Sincronizado con el móvil';setTimeout(()=>{msg.textContent=''},4000);}
 }
 
 // ── HISTORY TAB ──
