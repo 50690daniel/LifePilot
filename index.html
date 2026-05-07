@@ -2108,7 +2108,7 @@ async function callAI(opts){
   if(!key){ throw new Error('NO_KEY'); }
 
   // Always Gemini
-  const MODEL_MAP = {small:'gemini-2.5-flash-lite', medium:'gemini-2.5-flash', large:'gemini-2.5-flash'};
+  const MODEL_MAP = {small:'gemini-2.0-flash', medium:'gemini-2.0-flash', large:'gemini-2.0-flash'};
   let actualModel;
   if(model==='small'||model==='medium'||model==='large'){
     actualModel = MODEL_MAP[model];
@@ -2119,12 +2119,17 @@ async function callAI(opts){
   }
 
   const endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-  
-  try{
-    const messages = [{role:'user', content:prompt}];
-    const body = {model:actualModel, max_tokens, temperature, messages};
-    if(jsonMode) body.response_format = {type:'json_object'};
-    
+
+  const messages = [{role:'user', content:prompt}];
+  const body = {model:actualModel, max_tokens, temperature, messages};
+  if(jsonMode) body.response_format = {type:'json_object'};
+
+  // Retry up to 3 times with backoff for 503 (Gemini overload)
+  const MAX_RETRIES=3;
+  let lastErr;
+  for(let attempt=0;attempt<MAX_RETRIES;attempt++){
+    if(attempt>0) await new Promise(r=>setTimeout(r,1000*attempt));
+    try{
     const res = await fetch(endpoint, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
@@ -2135,30 +2140,26 @@ async function callAI(opts){
       const errBody = await res.text();
       const errJson = (()=>{try{return JSON.parse(errBody)}catch{return{}}})();
       const errMsg = errJson.error?.message || errBody.substring(0,150);
-      console.error(provider+' '+res.status+':', errMsg);
-      
-      if(res.status===429 || (res.status===400 && errMsg.toLowerCase().includes('rate'))){
-        throw new Error('Cuota IA agotada. Vuelve en unos minutos.');
+      console.error('Gemini '+res.status+':', errMsg);
+      if(res.status===503||res.status===429){
+        lastErr=new Error(res.status===503?'Gemini saturado, reintentando...':'Cuota IA agotada. Vuelve en unos minutos.');
+        continue; // retry
       }
-      if(res.status===401 || res.status===403){
-        throw new Error('API key inválida. Revisa la key en Ajustes.');
-      }
+      if(res.status===401||res.status===403){ throw new Error('API key inválida. Revisa la key en Ajustes.'); }
       throw new Error('IA error '+res.status+': '+errMsg);
     }
-    
+
     const data = await res.json();
     const txt = data.choices?.[0]?.message?.content || '{}';
     const result = jsonMode ? safeJsonParse(txt) : txt;
-    
-    if(cacheKey){
-      localStorage.setItem('lp_ai_'+cacheKey, JSON.stringify({_ts:Date.now(), data:result}));
-    }
+    if(cacheKey){ localStorage.setItem('lp_ai_'+cacheKey, JSON.stringify({_ts:Date.now(), data:result})); }
     return result;
-  }catch(e){
-    if(e.message==='NO_KEY' || e.message.includes('Cuota') || e.message.includes('inválida')) throw e;
-    console.error('callAI error:', e);
-    throw e;
+    }catch(e){
+      if(e.message.includes('inválida')||e.message.includes('NO_KEY')) throw e;
+      lastErr=e;
+    }
   }
+  throw lastErr||new Error('Gemini no disponible ahora. Inténtalo de nuevo.');
 }
 
 // Backwards compat alias - existing callGroq calls keep working
@@ -2169,6 +2170,25 @@ function getGroqCache(cacheKey){
     const cached = JSON.parse(localStorage.getItem('lp_ai_'+cacheKey)||localStorage.getItem('lp_groq_'+cacheKey)||'null');
     return cached?.data || null;
   }catch{return null}
+}
+
+// Gemini fetch con retry automático (3 intentos, backoff 1s/2s)
+async function fetchGemini(model,max_tokens,temperature,prompt){
+  const key=getAIKey();
+  if(!key)throw new Error('NO_KEY');
+  const endpoint='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+  const body=JSON.stringify({model,max_tokens,temperature,messages:[{role:'user',content:prompt}]});
+  for(let i=0;i<3;i++){
+    if(i>0)await new Promise(r=>setTimeout(r,1000*i));
+    try{
+      const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body});
+      if(r.status===503||r.status===429){continue}
+      if(r.status===401||r.status===403)throw new Error('API key inválida. Revisa la key en Ajustes.');
+      if(!r.ok){const e=await r.text();throw new Error('Gemini '+r.status+': '+e.substring(0,100));}
+      const d=await r.json();return d.choices?.[0]?.message?.content||'{}';
+    }catch(e){if(e.message.includes('inválida'))throw e;}
+  }
+  throw new Error('Gemini no disponible. Inténtalo de nuevo.');
 }
 
 const OFF_API='https://world.openfoodfacts.org';
@@ -2226,8 +2246,8 @@ async function foodSearch(){
     const res=await fetch(url,{headers:{'User-Agent':'LifePilot/2.0'}});
     if(!res.ok){
       const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
+      console.error('Gemini '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Gemini caducada o inválida':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -2257,11 +2277,11 @@ async function foodSearch(){
   if(resEl)resEl.innerHTML=`<div class="food-searching"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pur);animation:sdpulse .8s infinite"></span>${offResults.length?'Ampliando con IA...':'Sin resultados en OFF, usando IA nutricionista...'}</div>`;
   try{
     const prompt='Nutricionista experto en alimentación española. El usuario busca: "'+query+'". Genera 4 variantes con macros precisos POR 100G. Productos típicos de España/Mercadona. SOLO JSON array: [{"nombre":"...","marca":"...","kcal_100g":n,"prot_100g":n,"carbs_100g":n,"grasas_100g":n,"porcion_tipica":"ej: 200ml, 1 filete 120g"}]';
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:'gemini-2.5-flash-lite',max_tokens:450,temperature:0.1,messages:[{role:'user',content:prompt}]})});
+    const res=await fetchGemini('gemini-2.0-flash',450,0.1,prompt);
     if(!res.ok){
       const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
+      console.error('Gemini '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Gemini caducada o inválida':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -2306,11 +2326,11 @@ async function calcWithGroq(){
   if(el)el.innerHTML=`<div class="food-searching"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pur);animation:sdpulse .8s infinite"></span>Calculando macros de "${query}" con IA nutricionista...</div>`;
   try{
     const prompt='Eres nutricionista experto en comida española. El usuario ha comido: "'+query+'". Puede ser plato preparado, restaurante o casero. Calcula macros TOTALES para esa ración. SOLO JSON: {"nombre":"nombre del plato","cantidad_total":"ej: 1 kebab mediano ~350g","kcal":número,"proteinas_g":número,"carbohidratos_g":número,"grasas_g":número,"nota":"cómo lo calculaste"}';
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:'gemini-2.5-flash-lite',max_tokens:350,temperature:0.1,messages:[{role:'user',content:prompt}]})});
+    const res=await fetchGemini('gemini-2.0-flash',350,0.1,prompt);
     if(!res.ok){
       const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
+      console.error('Gemini '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Gemini caducada o inválida':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -2826,11 +2846,11 @@ Genera 1 sugerencia principal + 4 alternativas variadas. Mezcla exterior e inter
 Responde SOLO JSON sin texto extra:
 {"principal":{"emoji":"...","nombre":"...","descripcion":"descripción concreta en 1-2 frases","tipo":"exterior|casa|bici","duracion":"X min aprox","tag":"Aire libre|En casa|Bici|Cocina|Arte"},"alternativas":[{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."},{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."},{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."},{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."}]}`;
 
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},body:JSON.stringify({model:'gemini-2.5-flash-lite',max_tokens:400,temperature:0.7,messages:[{role:'user',content:prompt}]})});
+    const res=await fetchGemini('gemini-2.0-flash',400,0.7,prompt);
     if(!res.ok){
       const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
+      console.error('Gemini '+res.status+':',errBody);
+      const errTxt=res.status===401?'API key Gemini caducada o inválida':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
       throw new Error(errTxt);
     }
     const data=await res.json();
@@ -3137,19 +3157,7 @@ SOLO JSON:
   ...
 ]}`;
   try{
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:'gemini-2.5-flash-lite',max_tokens:500,temperature:0.4,messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const txt=data.choices?.[0]?.message?.content||'{}';
+    const txt=await fetchGemini('gemini-2.0-flash',500,0.4,prompt);
     const json=safeJsonParse(txt);
     const areaColors={cognitivo:'var(--blu)',lenguaje:'var(--pur)',motor_grueso:'var(--org)',motor_fino:'var(--pink)',social:'var(--grn)'};
     let h='<div style="display:flex;flex-direction:column;gap:8px">';
@@ -3803,19 +3811,7 @@ Responde SOLO JSON:
 }`;
 
   try{
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:'gemini-2.5-flash-lite',max_tokens:600,temperature:0.4,messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const txt=data.choices?.[0]?.message?.content||'{}';
+    const txt=await fetchGemini('gemini-2.0-flash',600,0.4,prompt);
     const json=safeJsonParse(txt);
     sls('briefing_'+d,json);
     renderBriefing(json);
@@ -3905,19 +3901,7 @@ Responde SOLO JSON:
 }`;
 
   try{
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:'gemini-2.5-flash',max_tokens:600,temperature:0.3,messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const txt=data.choices?.[0]?.message?.content||'{}';
+    const txt=await fetchGemini('gemini-2.0-flash',600,0.3,prompt);
     const json=safeJsonParse(txt);
     sls(weekKey,json);
     renderCoach(json);
@@ -4042,19 +4026,7 @@ Responde SOLO JSON:
 }`;
 
   try{
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:'gemini-2.5-flash',max_tokens:500,temperature:0.2,messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const txt=data.choices?.[0]?.message?.content||'{}';
+    const txt=await fetchGemini('gemini-2.0-flash',500,0.2,prompt);
     const json=safeJsonParse(txt);
     renderPatrones(json);
   
@@ -4369,18 +4341,7 @@ SOLO JSON:
 ],"insight_global":"Una observación general sobre el bienestar de Daniel basada en los datos"}`;
 
   try{
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
-      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:'gemini-2.5-flash',max_tokens:400,temperature:0.2,messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const json=JSON.parse((data.choices?.[0]?.message?.content||'{}').replace(/```json|```/g,'').trim());
+    const json=safeJsonParse(await fetchGemini('gemini-2.0-flash',400,0.2,prompt));
     const colors={positiva:['var(--grn-bg)','var(--grn)'],negativa:['var(--red-bg)','var(--red)'],neutra:['var(--blu-bg)','var(--blu)']};
     const confBadge={alta:['var(--grn-bg)','var(--grn)'],media:['var(--yel-bg)','var(--yel)'],baja:['var(--surface2)','var(--text3)']};
     let h='';
@@ -4473,18 +4434,7 @@ SOLO JSON:
 ],"resumen":"Una frase de resumen del estado actual"}`;
 
   try{
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
-      method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:'gemini-2.5-flash',max_tokens:600,temperature:0.2,messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const json=JSON.parse((data.choices?.[0]?.message?.content||'{}').replace(/```json|```/g,'').trim());
+    const json=safeJsonParse(await fetchGemini('gemini-2.0-flash',600,0.2,prompt));
     const confCol={alta:'var(--grn)',media:'var(--org)',baja:'var(--text3)'};
     let h='';
     if(json.resumen){
@@ -6346,19 +6296,7 @@ Da un consejo MUY ESPECÍFICO y PRÁCTICO en 3-4 frases sobre:
 
 Responde en español, directo, como un entrenador real. Sin listas ni bullets, texto continuo.`;
   try{
-    const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-      body:JSON.stringify({model:'gemini-2.5-flash-lite',max_tokens:300,temperature:0.4,messages:[{role:'user',content:prompt}]})
-    });
-    if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-    const txt=data.choices?.[0]?.message?.content||'';
+    const txt=await fetchGemini('gemini-2.0-flash',300,0.4,prompt);
     localStorage.setItem('lp_groq_'+cacheKey,JSON.stringify({_ts:Date.now(),data:txt}));
     el.innerHTML=`<div style="font-size:13px;color:var(--tx2);line-height:1.65">${txt}</div>`;
     if(btn){btn.textContent='🤖 Actualizar consejo IA';btn.disabled=false}
@@ -6433,18 +6371,8 @@ async function exFinishWorkout(){
       const prompt=`Entrenador personal. Daniel ha completado su entrenamiento de ${prog.tipo} (${prog.grupos.join(', ')}). Ha hecho ${totalSeries} series en total. Peso máximo usado: ${maxPeso}kg. Lleva entrenando poco tiempo con mancuernas en casa, objetivo: recomposición corporal.
 
 Escribe un mensaje de cierre motivador y ÚTIL en 2-3 frases. Incluye: qué hacer las próximas horas para maximizar la recuperación (proteína, agua, sueño). Sé específico y personal. Nada de frases vacías de gym.`;
-      const res=await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',{
-        method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+getAIKey()},
-        body:JSON.stringify({model:'gemini-2.5-flash-lite',max_tokens:280,temperature:0.5,messages:[{role:'user',content:prompt}]})
-      });
-      if(!res.ok){
-      const errBody=await res.text();
-      console.error('Groq '+res.status+':',errBody);
-      const errTxt=res.status===401?'API key Groq caducada':res.status===400?'Petición inválida: '+errBody.substring(0,200):'Error '+res.status;
-      throw new Error(errTxt);
-    }
-    const data=await res.json();
-      aiEl.innerHTML='<div style="font-size:14px;line-height:1.65">'+( data.choices?.[0]?.message?.content||'')+'</div>';
+      const txt=await fetchGemini('gemini-2.0-flash',280,0.5,prompt);
+      aiEl.innerHTML='<div style="font-size:14px;line-height:1.65">'+txt+'</div>';
     }catch(e){aiEl.style.display='none'}
   }
 }
