@@ -2065,6 +2065,8 @@ function renderMacros(){
 // AI key - stored in user's browser localStorage (set in Settings, NOT in code)
 function getAIKey(){return localStorage.getItem('lp_ai_key')||''}
 function getAIProvider(){return 'gemini'}
+function getGroqKey(){return localStorage.getItem('lp_groq_key')||''}
+function hasGroqKey(){return getGroqKey().length>10}
 function hasAIKey(){return getAIKey().length > 10}
 // Intenta parsear JSON aunque venga truncado por max_tokens
 function safeJsonParse(txt,fallback={}){
@@ -2105,21 +2107,23 @@ async function callAI(opts){
     }catch(e){}
   }
   
-  const key = getAIKey();
-  if(!key){ throw new Error('NO_KEY'); }
-
-  // Always Gemini
-  const MODEL_MAP = {small:'gemini-2.0-flash', medium:'gemini-2.0-flash', large:'gemini-2.0-flash'};
+  const useGroq=hasGroqKey()&&(model==='small'||model==='medium'||model.includes('8b'));
+  const key=useGroq?getGroqKey():getAIKey();
+  if(!key){throw new Error('NO_KEY');}
+  const MODEL_MAP=useGroq
+    ?{small:'llama-3.1-8b-instant',medium:'llama-3.1-8b-instant',large:'llama-3.3-70b-versatile'}
+    :{small:'gemini-2.0-flash',medium:'gemini-2.0-flash',large:'gemini-2.0-flash'};
   let actualModel;
   if(model==='small'||model==='medium'||model==='large'){
-    actualModel = MODEL_MAP[model];
-  } else if(model.includes('llama')){
-    actualModel = model.includes('70b') ? MODEL_MAP.large : MODEL_MAP.small;
-  } else {
-    actualModel = model;
+    actualModel=MODEL_MAP[model];
+  }else if(model.includes('llama')){
+    actualModel=useGroq?model:MODEL_MAP.small;
+  }else{
+    actualModel=model;
   }
-
-  const endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+  const endpoint=useGroq
+    ?'https://api.groq.com/openai/v1/chat/completions'
+    :'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
   const messages = [{role:'user', content:prompt}];
   const bodyObj = {model:actualModel, max_tokens, temperature, messages};
   if(jsonMode) bodyObj.response_format = {type:'json_object'};
@@ -2171,26 +2175,37 @@ async function _aiDrain(){
   }
 }
 
+// ── fetchAI: usa Groq si disponible, si no Gemini ──
+// Groq = llamadas frecuentes (briefing, comida, kira, gym)
+// Gemini = análisis semanal pesado (coach, correlaciones, predicciones)
+async function fetchGroq(max_tokens,temperature,prompt){
+  if(!hasGroqKey())throw new Error('NO_GROQ_KEY');
+  return _aiEnqueue(()=>_doFetch('https://api.groq.com/openai/v1/chat/completions','llama-3.1-8b-instant',getGroqKey(),max_tokens,temperature,prompt));
+}
 async function fetchGemini(model,max_tokens,temperature,prompt){
   if(!getAIKey())throw new Error('NO_KEY');
-  return _aiEnqueue(()=>_fetchGeminiDirect(model,max_tokens,temperature,prompt));
+  return _aiEnqueue(()=>_doFetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',model,getAIKey(),max_tokens,temperature,prompt));
 }
-async function _fetchGeminiDirect(model,max_tokens,temperature,prompt){
-  const key=getAIKey();
-  const endpoint='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+// Preferir Groq para llamadas ligeras (más cuota, más rápido)
+async function fetchAI(max_tokens,temperature,prompt){
+  if(hasGroqKey())return fetchGroq(max_tokens,temperature,prompt);
+  if(getAIKey())return fetchGemini('gemini-2.0-flash',max_tokens,temperature,prompt);
+  throw new Error('NO_KEY');
+}
+async function _doFetch(endpoint,model,key,max_tokens,temperature,prompt){
   const body=JSON.stringify({model,max_tokens,temperature,messages:[{role:'user',content:prompt}]});
-  const delays=[0,3000,8000]; // 0s, 3s, 8s — más espera en 429
+  const delays=[0,3000,8000];
   for(let i=0;i<3;i++){
     if(delays[i])await new Promise(r=>setTimeout(r,delays[i]));
     try{
       const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body});
-      if(r.status===503||r.status===429){console.warn('Gemini '+r.status+', reintentando...');continue;}
+      if(r.status===503||r.status===429){console.warn(model+' '+r.status+', reintentando...');continue;}
       if(r.status===401||r.status===403)throw new Error('API key inválida. Revisa la key en Ajustes.');
-      if(!r.ok){const e=await r.text();throw new Error('Gemini '+r.status+': '+e.substring(0,100));}
+      if(!r.ok){const e=await r.text();throw new Error('API error '+r.status+': '+e.substring(0,100));}
       const d=await r.json();return d.choices?.[0]?.message?.content||'{}';
-    }catch(e){if(e.message.includes('inválida')||e.message.includes('NO_KEY'))throw e;}
+    }catch(e){if(e.message.includes('inválida'))throw e;}
   }
-  throw new Error('Gemini no disponible. Inténtalo de nuevo.');
+  throw new Error('IA no disponible. Inténtalo de nuevo.');
 }
 
 const OFF_API='https://world.openfoodfacts.org';
@@ -2279,7 +2294,7 @@ async function foodSearch(){
   if(resEl)resEl.innerHTML=`<div class="food-searching"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pur);animation:sdpulse .8s infinite"></span>${offResults.length?'Ampliando con IA...':'Sin resultados en OFF, usando IA nutricionista...'}</div>`;
   try{
     const prompt='Nutricionista experto en alimentación española. El usuario busca: "'+query+'". Genera 4 variantes con macros precisos POR 100G. Productos típicos de España/Mercadona. SOLO JSON array: [{"nombre":"...","marca":"...","kcal_100g":n,"prot_100g":n,"carbs_100g":n,"grasas_100g":n,"porcion_tipica":"ej: 200ml, 1 filete 120g"}]';
-    const res=await fetchGemini('gemini-2.0-flash',450,0.1,prompt);
+    const res=await fetchAI(450,0.1,prompt);
     if(!res.ok){
       const errBody=await res.text();
       console.error('Gemini '+res.status+':',errBody);
@@ -2328,7 +2343,7 @@ async function calcWithGroq(){
   if(el)el.innerHTML=`<div class="food-searching"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pur);animation:sdpulse .8s infinite"></span>Calculando macros de "${query}" con IA nutricionista...</div>`;
   try{
     const prompt='Eres nutricionista experto en comida española. El usuario ha comido: "'+query+'". Puede ser plato preparado, restaurante o casero. Calcula macros TOTALES para esa ración. SOLO JSON: {"nombre":"nombre del plato","cantidad_total":"ej: 1 kebab mediano ~350g","kcal":número,"proteinas_g":número,"carbohidratos_g":número,"grasas_g":número,"nota":"cómo lo calculaste"}';
-    const res=await fetchGemini('gemini-2.0-flash',350,0.1,prompt);
+    const res=await fetchAI(350,0.1,prompt);
     if(!res.ok){
       const errBody=await res.text();
       console.error('Gemini '+res.status+':',errBody);
@@ -2848,7 +2863,7 @@ Genera 1 sugerencia principal + 4 alternativas variadas. Mezcla exterior e inter
 Responde SOLO JSON sin texto extra:
 {"principal":{"emoji":"...","nombre":"...","descripcion":"descripción concreta en 1-2 frases","tipo":"exterior|casa|bici","duracion":"X min aprox","tag":"Aire libre|En casa|Bici|Cocina|Arte"},"alternativas":[{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."},{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."},{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."},{"emoji":"...","nombre":"...","descripcion":"...","tag":"..."}]}`;
 
-    const res=await fetchGemini('gemini-2.0-flash',400,0.7,prompt);
+    const res=await fetchAI(400,0.7,prompt);
     if(!res.ok){
       const errBody=await res.text();
       console.error('Gemini '+res.status+':',errBody);
@@ -3159,7 +3174,7 @@ SOLO JSON:
   ...
 ]}`;
   try{
-    const txt=await fetchGemini('gemini-2.0-flash',500,0.4,prompt);
+    const txt=await fetchAI(500,0.4,prompt);
     const json=safeJsonParse(txt);
     const areaColors={cognitivo:'var(--blu)',lenguaje:'var(--pur)',motor_grueso:'var(--org)',motor_fino:'var(--pink)',social:'var(--grn)'};
     let h='<div style="display:flex;flex-direction:column;gap:8px">';
@@ -3813,7 +3828,7 @@ Responde SOLO JSON:
 }`;
 
   try{
-    const txt=await fetchGemini('gemini-2.0-flash',600,0.4,prompt);
+    const txt=await fetchAI(600,0.4,prompt);
     const json=safeJsonParse(txt);
     sls('briefing_'+d,json);
     renderBriefing(json);
@@ -5298,34 +5313,36 @@ function saveNotifSettings(s){sls('notif_settings',s)}
 // ── Settings panel ──
 
 function renderAIKeyStatus(){
-  const status=document.getElementById('ai-key-status');
-  const input=document.getElementById('ai-key-input');
-  if(input){input.value=getAIKey();input.placeholder='Pega aquí tu key de Gemini (AIza...)';}
-  if(status){
-    if(hasAIKey()){status.textContent='✓ Configurada';status.style.background='var(--grn-bg)';status.style.color='var(--grn)';}
-    else{status.textContent='Sin configurar';status.style.background='var(--org-bg)';status.style.color='var(--org)';}
-  }
+  const si=document.getElementById('ai-key-status'),ii=document.getElementById('ai-key-input');
+  if(ii)ii.value=getAIKey();
+  if(si){if(hasAIKey()){si.textContent='✓';si.style.background='var(--grn-bg)';si.style.color='var(--grn)';}else{si.textContent='—';si.style.background='var(--surface3)';si.style.color='var(--text3)';}}
+  const sg=document.getElementById('groq-key-status'),ig=document.getElementById('groq-key-input');
+  if(ig)ig.value=getGroqKey();
+  if(sg){if(hasGroqKey()){sg.textContent='✓';sg.style.background='var(--grn-bg)';sg.style.color='var(--grn)';}else{sg.textContent='—';sg.style.background='var(--surface3)';sg.style.color='var(--text3)';}}
+}
+function saveGroqKey(){
+  const v=(document.getElementById('groq-key-input')?.value||'').trim();
+  if(v.length<10){alert('Key demasiado corta.');return;}
+  localStorage.setItem('lp_groq_key',v);
+  document.getElementById('groq-key-save-btn').style.display='none';
+  const msg=document.getElementById('ai-key-msg');
+  if(msg){msg.textContent='✓ Groq guardada';setTimeout(()=>{msg.textContent=''},3000);}
+  renderAIKeyStatus();
 }
 function saveAIKey(){
-  const input=document.getElementById('ai-key-input');
-  const key=(input?.value||'').trim();
-  if(key.length<10){alert('Esa key parece demasiado corta. Verifica que la copiaste bien.');return;}
-  localStorage.setItem('lp_ai_key',key);
+  const v=(document.getElementById('ai-key-input')?.value||'').trim();
+  if(v.length<10){alert('Key demasiado corta.');return;}
+  localStorage.setItem('lp_ai_key',v);
   document.getElementById('ai-key-save-btn').style.display='none';
   const msg=document.getElementById('ai-key-msg');
-  if(msg){msg.textContent='✓ Guardada';setTimeout(()=>{msg.textContent=''},3000);}
+  if(msg){msg.textContent='✓ Gemini guardada';setTimeout(()=>{msg.textContent=''},3000);}
   renderAIKeyStatus();
-  // Clear AI cache so next call uses new key
-  Object.keys(localStorage).filter(k=>k.startsWith('lp_ai_')||k.startsWith('lp_groq_')).forEach(k=>{
-    if(k!=='lp_ai_key')localStorage.removeItem(k);
-  });
 }
 function saveAIProvider(){}
 function clearAIKey(){
-  if(!confirm('¿Borrar la API key guardada? Se desactivarán las funciones de IA.'))return;
-  localStorage.removeItem('lp_ai_key');
-  const input=document.getElementById('ai-key-input');
-  if(input)input.value='';
+  if(!confirm('¿Borrar todas las API keys?'))return;
+  localStorage.removeItem('lp_ai_key');localStorage.removeItem('lp_groq_key');
+  ['groq-key-input','ai-key-input'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderAIKeyStatus();
 }
 
@@ -6299,7 +6316,7 @@ Da un consejo MUY ESPECÍFICO y PRÁCTICO en 3-4 frases sobre:
 
 Responde en español, directo, como un entrenador real. Sin listas ni bullets, texto continuo.`;
   try{
-    const txt=await fetchGemini('gemini-2.0-flash',300,0.4,prompt);
+    const txt=await fetchAI(300,0.4,prompt);
     localStorage.setItem('lp_groq_'+cacheKey,JSON.stringify({_ts:Date.now(),data:txt}));
     el.innerHTML=`<div style="font-size:13px;color:var(--tx2);line-height:1.65">${txt}</div>`;
     if(btn){btn.textContent='🤖 Actualizar consejo IA';btn.disabled=false}
@@ -6374,7 +6391,7 @@ async function exFinishWorkout(){
       const prompt=`Entrenador personal. Daniel ha completado su entrenamiento de ${prog.tipo} (${prog.grupos.join(', ')}). Ha hecho ${totalSeries} series en total. Peso máximo usado: ${maxPeso}kg. Lleva entrenando poco tiempo con mancuernas en casa, objetivo: recomposición corporal.
 
 Escribe un mensaje de cierre motivador y ÚTIL en 2-3 frases. Incluye: qué hacer las próximas horas para maximizar la recuperación (proteína, agua, sueño). Sé específico y personal. Nada de frases vacías de gym.`;
-      const txt=await fetchGemini('gemini-2.0-flash',280,0.5,prompt);
+      const txt=await fetchAI(280,0.5,prompt);
       aiEl.innerHTML='<div style="font-size:14px;line-height:1.65">'+txt+'</div>';
     }catch(e){aiEl.style.display='none'}
   }
@@ -6608,21 +6625,27 @@ fetchTasks();
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px" id="macro-settings"></div>
 
     <!-- API KEY IA -->
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:12px">🤖 IA — API Key Gemini</div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:12px">🤖 IA — API Keys</div>
     <div style="background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:20px">
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <span id="ai-key-status" style="font-size:11px;font-weight:700;padding:5px 10px;border-radius:10px;background:var(--surface3);color:var(--text3);align-self:center">—</span>
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">🔑 Groq — llamadas rápidas (briefing, comida, Kira...)</div>
+      <div style="display:flex;gap:6px;margin-bottom:4px">
+        <input type="password" id="groq-key-input" placeholder="gsk_..." style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:monospace" oninput="document.getElementById('groq-key-save-btn').style.display='inline-block'">
+        <button id="groq-key-save-btn" onclick="saveGroqKey()" style="display:none;padding:8px 12px;border-radius:8px;background:var(--text);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">💾</button>
+        <span id="groq-key-status" style="font-size:11px;font-weight:700;padding:5px 8px;border-radius:10px;background:var(--surface3);color:var(--text3);align-self:center">—</span>
       </div>
-      <input type="password" id="ai-key-input" placeholder="Pega aquí tu key de Gemini (AIza...)" style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:monospace;box-sizing:border-box;margin-bottom:8px" oninput="document.getElementById('ai-key-save-btn').style.display='inline-block'">
-      <div style="display:flex;gap:8px;align-items:center">
-        <button id="ai-key-save-btn" onclick="saveAIKey()" style="display:none;padding:8px 16px;border-radius:8px;background:var(--text);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">💾 Guardar</button>
-        <button onclick="clearAIKey()" style="padding:8px 14px;border-radius:8px;background:transparent;color:var(--red);border:1px solid var(--red-bg);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Borrar</button>
-        <span id="ai-key-msg" style="font-size:11px;color:var(--grn);margin-left:auto"></span>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px">Gratis en <span style="color:var(--blu);cursor:pointer;text-decoration:underline" onclick="window.open('https://console.groq.com/keys','_blank')">console.groq.com/keys</span> · 30 req/min</div>
+
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">🔑 Gemini — análisis semanal (coach, correlaciones...)</div>
+      <div style="display:flex;gap:6px;margin-bottom:4px">
+        <input type="password" id="ai-key-input" placeholder="AIza..." style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;font-family:monospace" oninput="document.getElementById('ai-key-save-btn').style.display='inline-block'">
+        <button id="ai-key-save-btn" onclick="saveAIKey()" style="display:none;padding:8px 12px;border-radius:8px;background:var(--text);color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">💾</button>
+        <span id="ai-key-status" style="font-size:11px;font-weight:700;padding:5px 8px;border-radius:10px;background:var(--surface3);color:var(--text3);align-self:center">—</span>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.5">
-        Crea tu key gratis en <span style="color:var(--blu);cursor:pointer;text-decoration:underline" onclick="window.open('https://aistudio.google.com/apikey','_blank')">aistudio.google.com/apikey</span><br>
-        <span style="color:var(--text3);font-style:italic">La key se guarda solo en tu navegador. No se sube a internet.</span>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <button onclick="clearAIKey()" style="padding:6px 12px;border-radius:8px;background:transparent;color:var(--red);border:1px solid var(--red-bg);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">Borrar todo</button>
+        <span id="ai-key-msg" style="font-size:11px;color:var(--grn)"></span>
       </div>
+      <div style="font-size:11px;color:var(--text3)">Gratis en <span style="color:var(--blu);cursor:pointer;text-decoration:underline" onclick="window.open('https://aistudio.google.com/apikey','_blank')">aistudio.google.com/apikey</span> · 15 req/min<br><span style="font-style:italic">Las keys se guardan solo en tu navegador.</span></div>
     </div>
 
     <!-- INTEGRACIONES -->
