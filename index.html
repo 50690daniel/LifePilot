@@ -140,7 +140,8 @@ window.fbFullSync=async function(){
     (async()=>{const r=await fbGet('ocio','yt_custom');if(r?.list)localStorage.setItem('lp_yt_custom',JSON.stringify(r.list))})(),
   ]);
   console.log('LifePilot Desktop: sync complete');
-  if(typeof rHomeAll==='function')rHomeAll();
+  // Re-render UI sin relanzar IA (el briefing ya se generó al arrancar)
+  if(typeof rHomeMeds==='function'){rHomeMeds();rHomeNut();rHomeExMini();rHomeTasks();rHomeDiaryMini();}
 };
 window.addEventListener('load',()=>setTimeout(window.fbFullSync,2000));
 </script>
@@ -2119,47 +2120,29 @@ async function callAI(opts){
   }
 
   const endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-
   const messages = [{role:'user', content:prompt}];
-  const body = {model:actualModel, max_tokens, temperature, messages};
-  if(jsonMode) body.response_format = {type:'json_object'};
+  const bodyObj = {model:actualModel, max_tokens, temperature, messages};
+  if(jsonMode) bodyObj.response_format = {type:'json_object'};
 
-  // Retry up to 3 times with backoff for 503 (Gemini overload)
-  const MAX_RETRIES=3;
-  let lastErr;
-  for(let attempt=0;attempt<MAX_RETRIES;attempt++){
-    if(attempt>0) await new Promise(r=>setTimeout(r,1000*attempt));
-    try{
-    const res = await fetch(endpoint, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body: JSON.stringify(body)
-    });
-    
-    if(!res.ok){
-      const errBody = await res.text();
-      const errJson = (()=>{try{return JSON.parse(errBody)}catch{return{}}})();
-      const errMsg = errJson.error?.message || errBody.substring(0,150);
-      console.error('Gemini '+res.status+':', errMsg);
-      if(res.status===503||res.status===429){
-        lastErr=new Error(res.status===503?'Gemini saturado, reintentando...':'Cuota IA agotada. Vuelve en unos minutos.');
-        continue; // retry
-      }
-      if(res.status===401||res.status===403){ throw new Error('API key inválida. Revisa la key en Ajustes.'); }
-      throw new Error('IA error '+res.status+': '+errMsg);
+  // Pasar por la cola para no saturar la API
+  return _aiEnqueue(async()=>{
+    const delays=[0,3000,8000];
+    for(let i=0;i<3;i++){
+      if(delays[i])await new Promise(r=>setTimeout(r,delays[i]));
+      try{
+        const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify(bodyObj)});
+        if(res.status===503||res.status===429){console.warn('Gemini '+res.status+', reintentando...');continue;}
+        if(res.status===401||res.status===403)throw new Error('API key inválida. Revisa la key en Ajustes.');
+        if(!res.ok){const e=await res.text();throw new Error('IA error '+res.status+': '+e.substring(0,100));}
+        const data=await res.json();
+        const txt=data.choices?.[0]?.message?.content||'{}';
+        const result=jsonMode?safeJsonParse(txt):txt;
+        if(cacheKey)localStorage.setItem('lp_ai_'+cacheKey,JSON.stringify({_ts:Date.now(),data:result}));
+        return result;
+      }catch(e){if(e.message.includes('inválida')||e.message.includes('NO_KEY'))throw e;}
     }
-
-    const data = await res.json();
-    const txt = data.choices?.[0]?.message?.content || '{}';
-    const result = jsonMode ? safeJsonParse(txt) : txt;
-    if(cacheKey){ localStorage.setItem('lp_ai_'+cacheKey, JSON.stringify({_ts:Date.now(), data:result})); }
-    return result;
-    }catch(e){
-      if(e.message.includes('inválida')||e.message.includes('NO_KEY')) throw e;
-      lastErr=e;
-    }
-  }
-  throw lastErr||new Error('Gemini no disponible ahora. Inténtalo de nuevo.');
+    throw new Error('Gemini no disponible ahora. Inténtalo de nuevo.');
+  });
 }
 
 // Backwards compat alias - existing callGroq calls keep working
@@ -2173,20 +2156,39 @@ function getGroqCache(cacheKey){
 }
 
 // Gemini fetch con retry automático (3 intentos, backoff 1s/2s)
+// ── Cola de peticiones IA (evita 429 por llamadas simultáneas) ──
+const _aiQ=[];let _aiRunning=false;
+function _aiEnqueue(fn){
+  return new Promise((res,rej)=>{_aiQ.push({fn,res,rej});_aiDrain()});
+}
+async function _aiDrain(){
+  if(_aiRunning||!_aiQ.length)return;
+  _aiRunning=true;
+  const {fn,res,rej}=_aiQ.shift();
+  try{res(await fn())}catch(e){rej(e)}finally{
+    _aiRunning=false;
+    if(_aiQ.length)setTimeout(_aiDrain,400); // 400ms entre peticiones
+  }
+}
+
 async function fetchGemini(model,max_tokens,temperature,prompt){
+  if(!getAIKey())throw new Error('NO_KEY');
+  return _aiEnqueue(()=>_fetchGeminiDirect(model,max_tokens,temperature,prompt));
+}
+async function _fetchGeminiDirect(model,max_tokens,temperature,prompt){
   const key=getAIKey();
-  if(!key)throw new Error('NO_KEY');
   const endpoint='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
   const body=JSON.stringify({model,max_tokens,temperature,messages:[{role:'user',content:prompt}]});
+  const delays=[0,3000,8000]; // 0s, 3s, 8s — más espera en 429
   for(let i=0;i<3;i++){
-    if(i>0)await new Promise(r=>setTimeout(r,1000*i));
+    if(delays[i])await new Promise(r=>setTimeout(r,delays[i]));
     try{
       const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body});
-      if(r.status===503||r.status===429){continue}
+      if(r.status===503||r.status===429){console.warn('Gemini '+r.status+', reintentando...');continue;}
       if(r.status===401||r.status===403)throw new Error('API key inválida. Revisa la key en Ajustes.');
       if(!r.ok){const e=await r.text();throw new Error('Gemini '+r.status+': '+e.substring(0,100));}
       const d=await r.json();return d.choices?.[0]?.message?.content||'{}';
-    }catch(e){if(e.message.includes('inválida'))throw e;}
+    }catch(e){if(e.message.includes('inválida')||e.message.includes('NO_KEY'))throw e;}
   }
   throw new Error('Gemini no disponible. Inténtalo de nuevo.');
 }
@@ -4097,12 +4099,13 @@ function iaTab(tab){
 function rIAPage(){
   try{
     iaTab('dashboard');
-  buildProfile();
-  renderIADashboard();
-  renderCheckIn();
-  renderCompromisos();
-  genCorrelaciones();
-  genPredicciones();
+    buildProfile();
+    renderIADashboard();
+    renderCheckIn();
+    renderCompromisos();
+    // Escalonar llamadas IA: 0s, 0s (van a la cola de todas formas)
+    genCorrelaciones();
+    genPredicciones();
   }catch(_err){
     console.error('Error en rIAPage:', _err);
     const _pg=document.getElementById('page-ia');
