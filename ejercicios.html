@@ -626,7 +626,12 @@ body::before{
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import{getFirestore,doc,setDoc,getDoc}from"https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
-
+const _fbApp_m=initializeApp({apiKey:"AIzaSyAsQN3cIeSxZ_xf73zQRl8c2JxXIlpCMuA",authDomain:"lifepilot-3f77e.firebaseapp.com",projectId:"lifepilot-3f77e",storageBucket:"lifepilot-3f77e.firebasestorage.app",messagingSenderId:"678883046277",appId:"1:678883046277:web:41b1e8aaa8ee6055478aec"});
+const _db_m=getFirestore(_fbApp_m);
+window.fbSet=async(col,id,data)=>{try{await setDoc(doc(_db_m,col,id),data);return true}catch(e){return false}};
+window.fbGet=async(col,id)=>{try{const s=await getDoc(doc(_db_m,col,id));return s.exists()?s.data():null}catch(e){return null}};
+</script>
+<script>
 function goBackSmart(){
   // Detect if we came from desktop (index.html) or mobile.html based on viewport
   if(document.referrer && document.referrer.includes('mobile.html')){
@@ -651,10 +656,8 @@ const GROQ_KEY=''; // Now uses getAIKey() from localStorage
 const EX_DB_BASE='https://exercisedb.io/api/v2/exercises';
 
 // ── Firebase ──
-const _fbApp=initializeApp({apiKey:"AIzaSyAsQN3cIeSxZ_xf73zQRl8c2JxXIlpCMuA",authDomain:"lifepilot-3f77e.firebaseapp.com",projectId:"lifepilot-3f77e",storageBucket:"lifepilot-3f77e.firebasestorage.app",messagingSenderId:"678883046277",appId:"1:678883046277:web:41b1e8aaa8ee6055478aec"});
-const _db=getFirestore(_fbApp);
-async function fbSet(col,id,data){try{await setDoc(doc(_db,col,id),data);return true}catch(e){return false}}
-async function fbGet(col,id){try{const s=await getDoc(doc(_db,col,id));return s.exists()?s.data():null}catch(e){return null}}
+async function fbSet(col,id,data){return window.fbSet?window.fbSet(col,id,data):false}
+async function fbGet(col,id){return window.fbGet?window.fbGet(col,id):null}
 
 // ── Storage helpers (mismo prefijo que LifePilot) ──
 const lp=k=>JSON.parse(localStorage.getItem('lp_'+k)||'null');
