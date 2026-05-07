@@ -88,6 +88,29 @@ window.fbSaveCompromisos=async function(l){localStorage.setItem('lp_ia_compromis
 
 // ── KIRA ──
 window.fbSaveKiraMomentos=async function(m){localStorage.setItem('lp_kira_momentos',JSON.stringify(m));await fbSet('kira','momentos',{momentos:m})};
+window.fbSaveKiraIdeas=async function(l){localStorage.setItem('lp_kira_ideas',JSON.stringify(l));await fbSet('kira','ideas',{list:l})};
+
+// ── PLANES & APRENDER ──
+window.fbSavePlanes=async function(l){localStorage.setItem('lp_planes_ideas',JSON.stringify(l));await fbSet('kira','planes',{list:l})};
+window.fbSaveAprender=async function(l){localStorage.setItem('lp_aprender',JSON.stringify(l));await fbSet('kira','aprender',{list:l})};
+
+// ── EJERCICIO ──
+window.fbSaveEjercicioSets=async function(key,sets){await fbSet('ejercicio',key,{...sets,_key:key})};
+window.fbSaveEjercicioWeights=async function(w){localStorage.setItem('lp_weights',JSON.stringify(w));await fbSet('ejercicio','weights',{weights:w})};
+window.fbSaveExHistory=async function(h){localStorage.setItem('lp_ex_history',JSON.stringify(h));await fbSet('ejercicio','ex_history',{history:h})};
+
+// ── OCIO ──
+window.fbSaveOcioList=async function(lid,items){localStorage.setItem('lp_ocio_'+lid,JSON.stringify(items));await fbSet('ocio',lid,{list:items})};
+window.fbSaveYTCustom=async function(c){localStorage.setItem('lp_yt_custom',JSON.stringify(c));await fbSet('ocio','yt_custom',{list:c})};
+
+// ── NUTRICIÓN HELPER (lee los 3 campos y sincroniza juntos) ──
+window.syncNutToFb=function(d){
+  if(!window.fbSaveNutricion)return;
+  const foodLog=JSON.parse(localStorage.getItem('lp_food_log_'+d)||'[]');
+  const nutriCheck=JSON.parse(localStorage.getItem('lp_nutri_'+d)||'{}');
+  const agua=JSON.parse(localStorage.getItem('lp_water_'+d)||'0');
+  window.fbSaveNutricion(d,{foodLog,nutriCheck,agua});
+};
 
 // ── SYNC ON LOAD ──
 window.fbFullSync=async function(){
@@ -102,6 +125,19 @@ window.fbFullSync=async function(){
     (async()=>{const r=await fbGet('kira','momentos');if(r?.momentos)localStorage.setItem('lp_kira_momentos',JSON.stringify(r.momentos))})(),
     // Nutrición hoy
     (async()=>{const r=await fbGet('nutricion',today);if(r){if(r.foodLog)localStorage.setItem('lp_food_log_'+today,JSON.stringify(r.foodLog));if(r.nutriCheck)localStorage.setItem('lp_nutri_'+today,JSON.stringify(r.nutriCheck));if(r.agua!==undefined)localStorage.setItem('lp_water_'+today,JSON.stringify(r.agua));}})(),
+    // Kira ideas
+    (async()=>{const r=await fbGet('kira','ideas');if(r?.list)localStorage.setItem('lp_kira_ideas',JSON.stringify(r.list))})(),
+    // Planes
+    (async()=>{const r=await fbGet('kira','planes');if(r?.list)localStorage.setItem('lp_planes_ideas',JSON.stringify(r.list))})(),
+    // Aprender
+    (async()=>{const r=await fbGet('kira','aprender');if(r?.list)localStorage.setItem('lp_aprender',JSON.stringify(r.list))})(),
+    // Ejercicio weights + historial
+    (async()=>{const r=await fbGet('ejercicio','weights');if(r?.weights)localStorage.setItem('lp_weights',JSON.stringify(r.weights))})(),
+    (async()=>{const r=await fbGet('ejercicio','ex_history');if(r?.history)localStorage.setItem('lp_ex_history',JSON.stringify(r.history))})(),
+    // Ocio listas
+    ...(()=>{return['pelis','series','libros','musica','podcasts','juegos'].map(lid=>(async()=>{const r=await fbGet('ocio',lid);if(r?.list)localStorage.setItem('lp_ocio_'+lid,JSON.stringify(r.list))})())})(),
+    // YT custom
+    (async()=>{const r=await fbGet('ocio','yt_custom');if(r?.list)localStorage.setItem('lp_yt_custom',JSON.stringify(r.list))})(),
   ]);
   console.log('LifePilot Desktop: sync complete');
   if(typeof rHomeAll==='function')rHomeAll();
@@ -1876,7 +1912,7 @@ function rHomeMeds(){
   const h=`<div class="med-pill ${m.am?'done':''}" onclick="tMed('am')"><span class="med-dot" style="background:${m.am?'var(--grn)':'var(--red)'}"></span>${m.am?'✓ ':''}Med. mañana</div><div class="med-pill ${m.pm?'done':''}" onclick="tMed('pm')"><span class="med-dot" style="background:${m.pm?'var(--grn)':'var(--red)'}"></span>${m.pm?'✓ ':''}Med. noche</div>`;
   const el=document.getElementById('home-meds');if(el)el.innerHTML=h;
 }
-function tMed(t){const d=dk(),m=gls('meds_'+d,{am:false,pm:false});m[t]=!m[t];sls('meds_'+d,m);rHomeMeds()}
+function tMed(t){const d=dk(),m=gls('meds_'+d,{am:false,pm:false});m[t]=!m[t];sls('meds_'+d,m);if(window.fbSaveMeds)window.fbSaveMeds(d,m);rHomeMeds()}
 
 function rHomeNut(){
   const d=dk(),ch=gls('nutri_'+d,{}),log=gls('food_log_'+d,[]);
@@ -1896,7 +1932,7 @@ function rHomeNut(){
     <span>🥩 ${Math.round(totProt)} / ${target.prot}g prot</span>
   </div>`;
 }
-function tNutHome(id){const d=dk(),ch=gls('nutri_'+d,{});ch[id]=!ch[id];sls('nutri_'+d,ch);rHomeNut();if(document.getElementById('page-nutricion').classList.contains('active'))rNut()}
+function tNutHome(id){const d=dk(),ch=gls('nutri_'+d,{});ch[id]=!ch[id];sls('nutri_'+d,ch);if(window.syncNutToFb)window.syncNutToFb(d);rHomeNut();if(document.getElementById('page-nutricion').classList.contains('active'))rNut()}
 
 function rHomeExMini(){
   const day=EX[tdk()];const el=document.getElementById('home-ex-mini');if(!el)return;
@@ -2155,7 +2191,7 @@ function renderFoodLog(log){
 
 function removeFoodEntry(i){
   const d=dk(),log=gls('food_log_'+d,[]);
-  log.splice(i,1);sls('food_log_'+d,log);renderMacros();
+  log.splice(i,1);sls('food_log_'+d,log);if(window.syncNutToFb)window.syncNutToFb(d);renderMacros();
 }
 
 function foodSearchDebounce(){
@@ -2308,7 +2344,7 @@ async function calcWithGroq(){
 function confirmGroqFood(){
   const entry=window._pendingGroqEntry;if(!entry)return;
   const d=dk(),log=gls('food_log_'+d,[]);
-  log.push(entry);sls('food_log_'+d,log);
+  log.push(entry);sls('food_log_'+d,log);if(window.syncNutToFb)window.syncNutToFb(d);
   document.getElementById('food-input').value='';
   document.getElementById('food-results').innerHTML='';
   cancelFoodSelect();
@@ -2349,7 +2385,7 @@ function addSelectedFood(){
     src:selectedFood.src
   };
   const d=dk(),log=gls('food_log_'+d,[]);
-  log.push(entry);sls('food_log_'+d,log);
+  log.push(entry);sls('food_log_'+d,log);if(window.syncNutToFb)window.syncNutToFb(d);
   cancelFoodSelect();
   document.getElementById('food-input').value='';
   document.getElementById('food-results').innerHTML='';
@@ -2378,7 +2414,7 @@ function addManualEntry(){
     src:'manual',nota:'Entrada manual'
   };
   const d=dk(),log=gls('food_log_'+d,[]);
-  log.push(entry);sls('food_log_'+d,log);
+  log.push(entry);sls('food_log_'+d,log);if(window.syncNutToFb)window.syncNutToFb(d);
   document.getElementById('food-manual').style.display='none';
   ['man-name','man-kcal','man-prot','man-carbs','man-grasas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   renderMacros();
@@ -2390,9 +2426,10 @@ function addFoodEntry(){foodSearch()}
 function addWater(ml){
   const d=dk(),cur=gls('water_'+d,0);
   sls('water_'+d,Math.min(cur+ml,3000));
+  if(window.syncNutToFb)window.syncNutToFb(d);
   renderWater();
 }
-function resetWater(){sls('water_'+dk(),0);renderWater()}
+function resetWater(){const d=dk();sls('water_'+d,0);if(window.syncNutToFb)window.syncNutToFb(d);renderWater()}
 function renderWater(){
   const ml=gls('water_'+dk(),0);
   const target=2500;
@@ -2516,13 +2553,13 @@ function rNut(){
     }
   }
 }
-function tNut(id){const d=dk(),ch=gls('nutri_'+d,{});ch[id]=!ch[id];sls('nutri_'+d,ch);rNut();if(document.getElementById('page-home').classList.contains('active'))rHomeNut()}
+function tNut(id){const d=dk(),ch=gls('nutri_'+d,{});ch[id]=!ch[id];sls('nutri_'+d,ch);if(window.syncNutToFb)window.syncNutToFb(d);rNut();if(document.getElementById('page-home').classList.contains('active'))rHomeNut()}
 
 // ═══════════ EJERCICIOS ═══════════
 
 function selDay(k){curDay=k;planB=false;rEx()}
-function tSet2(key,s,name,w,totalSets){const d=dk(),lsk='sets_'+d+'_'+curDay,sets=gls(lsk,{});const sk=`${key}_${s}`;sets[sk]=!sets[sk];sls(lsk,sets);let done=0;for(let i=1;i<=totalSets;i++)if(sets[`${key}_${i}`])done++;if(done>0){const hist=gls('ex_history',{});hist[name]={date:d,sets:done+'/'+totalSets,weight:w||'—'};sls('ex_history',hist)}rEx();if(sets[sk])startRest()}
-function editW(name,cur){const nw=prompt(`Peso para ${name}:`,cur);if(!nw)return;const w=gls('weights',[]);const i=w.findIndex(x=>x.name===name);if(i>=0)w[i].w=nw;else w.push({name,w:nw});sls('weights',w);rEx()}
+function tSet2(key,s,name,w,totalSets){const d=dk(),lsk='sets_'+d+'_'+curDay,sets=gls(lsk,{});const sk=`${key}_${s}`;sets[sk]=!sets[sk];sls(lsk,sets);if(window.fbSaveEjercicioSets)window.fbSaveEjercicioSets(d+'_'+curDay,sets);let done=0;for(let i=1;i<=totalSets;i++)if(sets[`${key}_${i}`])done++;if(done>0){const hist=gls('ex_history',{});hist[name]={date:d,sets:done+'/'+totalSets,weight:w||'—'};sls('ex_history',hist);if(window.fbSaveExHistory)window.fbSaveExHistory(hist)}rEx();if(sets[sk])startRest()}
+function editW(name,cur){const nw=prompt(`Peso para ${name}:`,cur);if(!nw)return;const w=gls('weights',[]);const i=w.findIndex(x=>x.name===name);if(i>=0)w[i].w=nw;else w.push({name,w:nw});sls('weights',w);if(window.fbSaveEjercicioWeights)window.fbSaveEjercicioWeights(w);rEx()}
 function selOcio(id){selDeskOcioMode(id)}
 function rOcio(){
   try{
@@ -2645,8 +2682,8 @@ function renderDeskOcioList(id){
   h+=`<div class="add-row" style="margin-top:12px"><input type="text" id="desk-ocio-inp" placeholder="Añadir..." onkeydown="if(event.key==='Enter'){const v=this.value.trim();if(v){const i=gls('ocio_${id}',[]);i.unshift({name:v,done:false});sls('ocio_${id}',i);renderDeskOcioList('${id}')}}"><button class="abtn grn" onclick="const v=document.getElementById('desk-ocio-inp').value.trim();if(v){const i=gls('ocio_${id}',[]);i.unshift({name:v,done:false});sls('ocio_${id}',i);renderDeskOcioList('${id}')}">+</button></div>`;
   el.innerHTML=h;
 }
-function deskTOcio(lid,i){const items=gls('ocio_'+lid,[]);items[i].done=!items[i].done;sls('ocio_'+lid,items);renderDeskOcioList(lid)}
-function deskDOcio(lid,i){const items=gls('ocio_'+lid,[]);items.splice(i,1);sls('ocio_'+lid,items);renderDeskOcioList(lid)}
+function deskTOcio(lid,i){const items=gls('ocio_'+lid,[]);items[i].done=!items[i].done;sls('ocio_'+lid,items);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,items);renderDeskOcioList(lid)}
+function deskDOcio(lid,i){const items=gls('ocio_'+lid,[]);items.splice(i,1);sls('ocio_'+lid,items);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,items);renderDeskOcioList(lid)}
 
 function renderDeskOcioRandom(){
   const el=document.getElementById('ocio-content');if(!el)return;
@@ -2667,13 +2704,13 @@ function renderDeskOcioRandom(){
 }
 function rng(){const s=[];YT.forEach(c=>s.push({t:'📺',n:c.n}));gls('ocio_pelis',defList('pelis')).filter(p=>!p.done).forEach(p=>s.push({t:'🎬',n:p.name}));gls('ocio_musica',[]).filter(m=>!m.done).forEach(m=>s.push({t:'🎵',n:m.name}));if(!s.length)return;const p=s[Math.floor(Math.random()*s.length)];document.getElementById('rng-r').innerHTML=`<div class="rng-result">${p.t} ${p.n}</div>`}
 function rYT(){const custom=ytCustom(),all=[...YT,...custom];let h='<div class="yt-list">';all.forEach((c,i)=>{const isC=i>=YT.length,ci=i-YT.length,col=c.color||'#BF5AF2',init=c.n.charAt(0);h+=`<div class="ytc" onclick="window.open('${c.u}','_blank')"><div class="ytc-av" style="background:${col}">${c.img?`<img src="${c.img}" onerror="this.outerHTML='${init}'">`:`${init}`}</div><div class="ytc-info"><div class="ytc-n">${c.n}</div><div class="ytc-d">${c.desc}</div></div>${c.tag?`<span class="ytc-tag" style="background:${col}18;color:${col}">${c.tag}</span>`:''}${isC?`<button class="ib" style="width:28px;height:28px;font-size:12px" onclick="event.stopPropagation();delYT(${ci})">✕</button>`:'<span style="color:var(--text3);font-size:16px">›</span>'}</div>`});h+='</div>';document.getElementById('oc').innerHTML=h;document.getElementById('oc').innerHTML+=`<div class="add-row"><input type="text" id="yt-input" placeholder="Nombre del canal..."><button class="abtn pur" onclick="addYTCh()">+</button></div>`}
-function addYTCh(){const v=document.getElementById('yt-input')?.value?.trim();if(!v)return;const c=ytCustom(),cols=['#E74C3C','#3498DB','#2ECC71','#F39C12','#9B59B6'];c.push({n:v,u:'https://www.youtube.com/results?search_query='+encodeURIComponent(v),desc:'Canal añadido',tag:'Nuevo',color:cols[c.length%cols.length]});sls('yt_custom',c);rYT()}
-function delYT(ci){const c=ytCustom();c.splice(ci,1);sls('yt_custom',c);rYT()}
+function addYTCh(){const v=document.getElementById('yt-input')?.value?.trim();if(!v)return;const c=ytCustom(),cols=['#E74C3C','#3498DB','#2ECC71','#F39C12','#9B59B6'];c.push({n:v,u:'https://www.youtube.com/results?search_query='+encodeURIComponent(v),desc:'Canal añadido',tag:'Nuevo',color:cols[c.length%cols.length]});sls('yt_custom',c);if(window.fbSaveYTCustom)window.fbSaveYTCustom(c);rYT()}
+function delYT(ci){const c=ytCustom();c.splice(ci,1);sls('yt_custom',c);if(window.fbSaveYTCustom)window.fbSaveYTCustom(c);rYT()}
 function rOcioList(lid){const items=gls('ocio_'+lid,defList(lid));let h='';if(!items.length)h='<div class="empty">¡Añade algo!</div>';else items.forEach((it,i)=>{h+=`<div class="li"><div class="li-txt ${it.done?'done':''}">${it.name}</div><div class="li-acts"><button class="ib" onclick="tOcio('${lid}',${i})">${it.done?'↩':'✓'}</button><button class="ib" onclick="dOcio('${lid}',${i})">✕</button></div></div>`});h+=`<div class="add-row"><input type="text" id="ocio-input-${lid}" placeholder="${{pelis:'Peli o serie...',musica:'Álbum...',juegos:'Juego...'}[lid]||'Añadir...'}"><button class="abtn pur" onclick="addOcioItem('${lid}')">+</button></div>`;document.getElementById('oc').innerHTML=h}
-function addOcioItem(lid){const v=document.getElementById('ocio-input-'+lid)?.value?.trim();if(!v)return;const i=gls('ocio_'+lid,defList(lid));i.unshift({name:v,done:false});sls('ocio_'+lid,i);rOcioList(lid)}
+function addOcioItem(lid){const v=document.getElementById('ocio-input-'+lid)?.value?.trim();if(!v)return;const i=gls('ocio_'+lid,defList(lid));i.unshift({name:v,done:false});sls('ocio_'+lid,i);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,i);rOcioList(lid)}
 function defList(lid){if(lid==='pelis')return[{name:'El Mago del Kremlin',done:false},{name:'La Vaquilla',done:false}];return[]}
-function tOcio(lid,i){const items=gls('ocio_'+lid,[]);items[i].done=!items[i].done;sls('ocio_'+lid,items);rOcioList(lid)}
-function dOcio(lid,i){const items=gls('ocio_'+lid,[]);items.splice(i,1);sls('ocio_'+lid,items);rOcioList(lid)}
+function tOcio(lid,i){const items=gls('ocio_'+lid,[]);items[i].done=!items[i].done;sls('ocio_'+lid,items);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,items);rOcioList(lid)}
+function dOcio(lid,i){const items=gls('ocio_'+lid,[]);items.splice(i,1);sls('ocio_'+lid,items);if(window.fbSaveOcioList)window.fbSaveOcioList(lid,items);rOcioList(lid)}
 
 // ═══════════ TAREAS (Notion) ═══════════
 function setSS(s){['sdot','sdot2'].forEach(id=>{const d=document.getElementById(id);if(d)d.className='sdot'+(s==='loading'?' loading':s==='err'?' err':'')});['slbl','slbl2'].forEach(id=>{const d=document.getElementById(id);if(d)d.textContent=s==='loading'?'Sync...':s==='ok'?'Sincronizado':'Error'})}
@@ -2840,7 +2877,7 @@ function renderTardeSugsDesktop(sugs,tiempo){
 
 function tardeGuardarD(nombre){
   const items=gls('kira_ideas',[]);
-  if(!items.find(i=>i.name.includes(nombre))){items.unshift({name:'✅ '+nombre+' (hoy)',done:false});sls('kira_ideas',items)}
+  if(!items.find(i=>i.name.includes(nombre))){items.unshift({name:'✅ '+nombre+' (hoy)',done:false});sls('kira_ideas',items);if(window.fbSaveKiraIdeas)window.fbSaveKiraIdeas(items)}
   rKira();
 }
 
@@ -2874,9 +2911,9 @@ function rKira(){
   }
 }
 function toggleRole(id){const cur=gls('kira_role_open','');sls('kira_role_open',cur===id?'':id);rKira()}
-function tKira(i){const items=gls('kira_ideas',[]);items[i].done=!items[i].done;sls('kira_ideas',items);rKira()}
-function dKira(i){const items=gls('kira_ideas',[]);items.splice(i,1);sls('kira_ideas',items);rKira()}
-function addKiraItem(){const v=document.getElementById('kira-input')?.value?.trim();if(!v)return;const i=gls('kira_ideas',[]);i.unshift({name:v,done:false});sls('kira_ideas',i);document.getElementById('kira-input').value='';rKira()}
+function tKira(i){const items=gls('kira_ideas',[]);items[i].done=!items[i].done;sls('kira_ideas',items);if(window.fbSaveKiraIdeas)window.fbSaveKiraIdeas(items);rKira()}
+function dKira(i){const items=gls('kira_ideas',[]);items.splice(i,1);sls('kira_ideas',items);if(window.fbSaveKiraIdeas)window.fbSaveKiraIdeas(items);rKira()}
+function addKiraItem(){const v=document.getElementById('kira-input')?.value?.trim();if(!v)return;const i=gls('kira_ideas',[]);i.unshift({name:v,done:false});sls('kira_ideas',i);if(window.fbSaveKiraIdeas)window.fbSaveKiraIdeas(i);document.getElementById('kira-input').value='';rKira()}
 
 // ═══════ DESARROLLO INFANTIL CIENTÍFICO ═══════
 // Basado en: OMS, CDC, Portage Guide, Pikler, teoría de Vygotsky
@@ -3062,7 +3099,7 @@ function toggleHito(rango,area,idx){
 
 function addKiraItemDirect(name){
   const items=gls('kira_ideas',[]);
-  if(!items.find(i=>i.name===name)){items.unshift({name,done:false});sls('kira_ideas',items);rKira()}
+  if(!items.find(i=>i.name===name)){items.unshift({name,done:false});sls('kira_ideas',items);if(window.fbSaveKiraIdeas)window.fbSaveKiraIdeas(items);rKira()}
 }
 
 async function genActividadesIA(){
@@ -3137,6 +3174,7 @@ function saveMomento(){
   const momentos=gls('kira_momentos',[]);
   momentos.unshift({emoji,texto:txt,fecha:dk(),ts:Date.now()});
   sls('kira_momentos',momentos.slice(0,50)); // keep last 50
+  if(window.fbSaveKiraMomentos)window.fbSaveKiraMomentos(momentos.slice(0,50));
   document.getElementById('momento-txt').value='';
   document.getElementById('momentos-add').style.display='none';
   renderMomentos();
@@ -3159,7 +3197,7 @@ function renderMomentos(){
   if(momentos.length>6)h+=`<div style="font-size:11px;color:var(--text3);text-align:center;padding:6px 0">${momentos.length-6} momentos más guardados</div>`;
   el.innerHTML=h;
 }
-function delMomento(i){const m=gls('kira_momentos',[]);m.splice(i,1);sls('kira_momentos',m);renderMomentos()}
+function delMomento(i){const m=gls('kira_momentos',[]);m.splice(i,1);sls('kira_momentos',m);if(window.fbSaveKiraMomentos)window.fbSaveKiraMomentos(m);renderMomentos()}
 
 // ═══════════ PLANES ═══════════
 function rPlanes(){
@@ -3187,9 +3225,9 @@ function rPlanes(){
   }
 }
 function selPC(id){curPlanCat=id;rPlanes()}
-function tPlan(i){const items=gls('planes_ideas',[]);items[i].done=!items[i].done;sls('planes_ideas',items);rPlanes()}
-function dPlan(i){const items=gls('planes_ideas',[]);items.splice(i,1);sls('planes_ideas',items);rPlanes()}
-function addPlanItem(){const v=document.getElementById('planes-input')?.value?.trim();if(!v)return;const i=gls('planes_ideas',[]);i.unshift({name:v,done:false});sls('planes_ideas',i);document.getElementById('planes-input').value='';rPlanes()}
+function tPlan(i){const items=gls('planes_ideas',[]);items[i].done=!items[i].done;sls('planes_ideas',items);if(window.fbSavePlanes)window.fbSavePlanes(items);rPlanes()}
+function dPlan(i){const items=gls('planes_ideas',[]);items.splice(i,1);sls('planes_ideas',items);if(window.fbSavePlanes)window.fbSavePlanes(items);rPlanes()}
+function addPlanItem(){const v=document.getElementById('planes-input')?.value?.trim();if(!v)return;const i=gls('planes_ideas',[]);i.unshift({name:v,done:false});sls('planes_ideas',i);if(window.fbSavePlanes)window.fbSavePlanes(i);document.getElementById('planes-input').value='';rPlanes()}
 
 // ═══════════ APRENDER ═══════════
 function rApr(){
@@ -3210,9 +3248,9 @@ function rApr(){
     }
   }
 }
-function tApr(i){const items=gls('aprender',[]);items[i].done=!items[i].done;sls('aprender',items);rApr()}
-function dApr(i){const items=gls('aprender',[]);items.splice(i,1);sls('aprender',items);rApr()}
-function addAprItem(){const v=document.getElementById('apr-input')?.value?.trim();if(!v)return;const i=gls('aprender',[]);i.unshift({name:v,done:false});sls('aprender',i);document.getElementById('apr-input').value='';rApr()}
+function tApr(i){const items=gls('aprender',[]);items[i].done=!items[i].done;sls('aprender',items);if(window.fbSaveAprender)window.fbSaveAprender(items);rApr()}
+function dApr(i){const items=gls('aprender',[]);items.splice(i,1);sls('aprender',items);if(window.fbSaveAprender)window.fbSaveAprender(items);rApr()}
+function addAprItem(){const v=document.getElementById('apr-input')?.value?.trim();if(!v)return;const i=gls('aprender',[]);i.unshift({name:v,done:false});sls('aprender',i);if(window.fbSaveAprender)window.fbSaveAprender(i);document.getElementById('apr-input').value='';rApr()}
 
 // ═══════════ DIARIO ═══════════
 function rDiarioAll(){
