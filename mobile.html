@@ -4021,16 +4021,19 @@ async function mFoodSearch(query){
       // Cache check 30 days
       const _fkey='mfood_'+(query||'').toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,40);
       const _fcached=JSON.parse(localStorage.getItem('lp_groq_'+_fkey)||'null');
-      let res, data;
-      if(_fcached && _fcached._ts && (Date.now()-_fcached._ts)<30*86400000){
-        data={choices:[{message:{content:JSON.stringify(_fcached.data)}}]};
-        res={ok:true};
-      } else {
-        const _aiTxt=await mFetchAI(250,0.1,prompt);
-      const groqItems=safeJsonParse(_aiTxt,[]);
-      if(!_fcached){try{localStorage.setItem('lp_groq_'+_fkey,JSON.stringify({_ts:Date.now(),data:groqItems}));}catch(e){}}
-      const groqRes=groqItems.map((item,i)=>({name:item.nombre||query,brand:item.marca||'',img:null,kcal100:Math.round(item.kcal_100g||0),prot100:+(item.prot_100g||0).toFixed(1),carbs100:+(item.carbs_100g||0).toFixed(1),grasas100:+(item.grasas_100g||0).toFixed(1),serving:item.porcion_tipica||null,servingQty:100,src:'groq'}));
-      results=[...results,...groqRes];
+      try{
+        let groqItems;
+        if(_fcached&&_fcached._ts&&(Date.now()-_fcached._ts)<30*86400000){
+          groqItems=_fcached.data||[];
+        }else{
+          const _aiTxt=await mFetchAI(250,0.1,prompt);
+          groqItems=safeJsonParse(_aiTxt,[]);
+          if(!Array.isArray(groqItems))groqItems=[];
+          try{localStorage.setItem('lp_groq_'+_fkey,JSON.stringify({_ts:Date.now(),data:groqItems}));}catch(e){}
+        }
+        const groqRes=groqItems.map((item,i)=>({name:item.nombre||query,brand:item.marca||'',img:null,kcal100:Math.round(item.kcal_100g||0),prot100:+(item.prot_100g||0).toFixed(1),carbs100:+(item.carbs_100g||0).toFixed(1),grasas100:+(item.grasas_100g||0).toFixed(1),serving:item.porcion_tipica||null,servingQty:100,src:'groq'}));
+        results=[...results,...groqRes];
+      }catch(e){}
     }catch(e){}
   }
 
