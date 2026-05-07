@@ -559,6 +559,7 @@ body::before{
     <div class="main-tab on" onclick="switchTab('hoy')">Hoy</div>
     <div class="main-tab" onclick="switchTab('historial')">Historial</div>
     <div class="main-tab" onclick="switchTab('programa')">Programa</div>
+    <div class="main-tab" onclick="switchTab('config')">⚙️ Config</div>
   </div>
 
   <!-- ── TAB: HOY ── -->
@@ -579,6 +580,18 @@ body::before{
   <!-- ── TAB: PROGRAMA ── -->
   <div id="tab-programa" style="display:none">
     <div id="program-content"></div>
+  </div>
+
+  <!-- ── TAB: CONFIG ── -->
+  <div id="tab-config" style="display:none">
+    <div style="font-size:13px;color:var(--tx2);margin-bottom:20px;line-height:1.6;padding:12px 14px;background:var(--card);border-radius:var(--r);border-left:3px solid var(--blu)">
+      💡 Los cambios aquí se sincronizan con el móvil vía Firebase. Añade la URL del vídeo de YouTube y el móvil lo mostrará al entrenar.
+    </div>
+    <div id="config-content"></div>
+    <div style="display:flex;gap:12px;margin-top:20px;align-items:center">
+      <button onclick="saveExConfig()" style="padding:12px 24px;border-radius:100px;background:var(--grn);border:none;color:#000;font-family:var(--f);font-size:14px;font-weight:700;cursor:pointer">☁️ Guardar y sincronizar</button>
+      <span id="config-msg" style="font-size:13px;color:var(--grn)"></span>
+    </div>
   </div>
 
 </div>
@@ -610,7 +623,9 @@ body::before{
   <button class="complete-close" onclick="closeComplete()">Volver al inicio</button>
 </div>
 
-<script>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import{getFirestore,doc,setDoc,getDoc}from"https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
 function goBackSmart(){
   // Detect if we came from desktop (index.html) or mobile.html based on viewport
@@ -634,6 +649,12 @@ function hasAIKey(){return getAIKey().length>10}
 // ═══════════════════════════════════════════
 const GROQ_KEY=''; // Now uses getAIKey() from localStorage
 const EX_DB_BASE='https://exercisedb.io/api/v2/exercises';
+
+// ── Firebase ──
+const _fbApp=initializeApp({apiKey:"AIzaSyAsQN3cIeSxZ_xf73zQRl8c2JxXIlpCMuA",authDomain:"lifepilot-3f77e.firebaseapp.com",projectId:"lifepilot-3f77e",storageBucket:"lifepilot-3f77e.firebasestorage.app",messagingSenderId:"678883046277",appId:"1:678883046277:web:41b1e8aaa8ee6055478aec"});
+const _db=getFirestore(_fbApp);
+async function fbSet(col,id,data){try{await setDoc(doc(_db,col,id),data);return true}catch(e){return false}}
+async function fbGet(col,id){try{const s=await getDoc(doc(_db,col,id));return s.exists()?s.data():null}catch(e){return null}}
 
 // ── Storage helpers (mismo prefijo que LifePilot) ──
 const lp=k=>JSON.parse(localStorage.getItem('lp_'+k)||'null');
@@ -960,7 +981,26 @@ function getStreak(){
 }
 
 // ── INIT ──
+function applyExConfig(cfg){
+  if(!cfg||typeof cfg!=='object')return;
+  Object.values(PROGRAMA).forEach(dia=>{
+    (dia.ejercicios||[]).forEach(ex=>{
+      const c=cfg[ex.id];if(!c)return;
+      if(c.video_url)ex.video_url=c.video_url;
+      if(c.series&&c.series!==ex.series)ex.series=c.series;
+      if(c.reps&&c.reps!==ex.reps)ex.reps=c.reps;
+    });
+  });
+}
+
 function init(){
+  // Apply saved config immediately (local cache)
+  try{const c=lp('ex_config');if(c)applyExConfig(c);}catch(e){}
+  // Load fresh config from Firebase in background
+  fbGet('config','ejercicios').then(r=>{
+    if(r){delete r._ts;applyExConfig(r);sp('ex_config',r);}
+  }).catch(()=>{});
+
   // Update streak badge
   const streak=getStreak();
   const sb=document.getElementById('top-streak');
@@ -1119,6 +1159,14 @@ function renderWorkout(){
         <div class="ex-gif-wrap" id="gif-${ex.id}">
           <div class="ex-gif-loading"><div class="gif-spinner"></div>Cargando animación...</div>
         </div>
+
+        ${ex.video_url?`<a href="${ex.video_url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.25);border-radius:12px;margin-bottom:12px;text-decoration:none">
+          <span style="font-size:22px">▶️</span>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#ff453a">Ver vídeo de referencia</div>
+            <div style="font-size:11px;color:var(--tx3)">YouTube · técnica del ejercicio</div>
+          </div>
+        </a>`:''}
 
         <!-- Instructions -->
         <div class="ex-instructions">
@@ -1468,13 +1516,98 @@ function closeComplete(){
 function switchTab(tab){
   curTab=tab;
   document.querySelectorAll('.main-tab').forEach((t,i)=>{
-    t.classList.toggle('on',['hoy','historial','programa'][i]===tab);
+    t.classList.toggle('on',['hoy','historial','programa','config'][i]===tab);
   });
   document.getElementById('tab-hoy').style.display=tab==='hoy'?'block':'none';
   document.getElementById('tab-historial').style.display=tab==='historial'?'block':'none';
   document.getElementById('tab-programa').style.display=tab==='programa'?'block':'none';
+  document.getElementById('tab-config').style.display=tab==='config'?'block':'none';
   if(tab==='historial') renderHistory();
   if(tab==='programa') renderProgram();
+  if(tab==='config') renderExConfig();
+}
+
+// ── CONFIG: Editor de vídeos y parámetros ──
+let _exCfg={};
+
+async function renderExConfig(){
+  const el=document.getElementById('config-content');if(!el)return;
+  el.innerHTML='<div style="font-size:13px;color:var(--tx3);padding:20px 0;text-align:center">Cargando config...</div>';
+  try{const r=await fbGet('config','ejercicios');if(r){delete r._ts;delete r._user;_exCfg=r;}}catch(e){}
+
+  const allExByDay={};
+  Object.entries(PROGRAMA).forEach(([k,dia])=>{
+    if(dia.ejercicios?.length) allExByDay[k]=dia;
+  });
+
+  let html='';
+  Object.entries(allExByDay).forEach(([dayKey,dia])=>{
+    html+=`<div style="margin-bottom:28px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--tx3);margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--brd)">${dia.emoji||'💪'} ${dia.label} — ${dia.grupos?.join(' · ')||''}</div>`;
+    dia.ejercicios.forEach(ex=>{
+      const cfg=_exCfg[ex.id]||{};
+      const vid=cfg.video_url||'';
+      const series=cfg.series??ex.series;
+      const reps=cfg.reps??ex.reps;
+      html+=`<div style="background:var(--card);border:1px solid var(--brd);border-radius:14px;padding:14px;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:700;color:var(--tx);margin-bottom:12px">${ex.nombre} <span style="font-size:11px;font-weight:400;color:var(--tx3)">${ex.musculos_principales?.[0]||''}</span></div>
+        <div style="display:grid;grid-template-columns:80px 120px 1fr;gap:10px;align-items:end">
+          <div>
+            <div style="font-size:10px;color:var(--tx3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Series</div>
+            <input type="number" min="1" max="10" value="${series}" id="cfg-series-${ex.id}"
+              style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--brd);background:rgba(255,255,255,.06);color:var(--tx);font-size:14px;font-family:var(--f);outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--tx3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Reps</div>
+            <input type="text" value="${reps}" id="cfg-reps-${ex.id}"
+              style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--brd);background:rgba(255,255,255,.06);color:var(--tx);font-size:14px;font-family:var(--f);outline:none">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--tx3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">🎬 URL vídeo YouTube</div>
+            <div style="display:flex;gap:8px">
+              <input type="url" value="${vid}" id="cfg-vid-${ex.id}" placeholder="https://youtube.com/watch?v=..."
+                style="flex:1;padding:9px 11px;border-radius:10px;border:1px solid var(--brd);background:rgba(255,255,255,.06);color:var(--tx);font-size:13px;font-family:var(--f);outline:none">
+              ${vid?`<a href="${vid}" target="_blank"
+                style="padding:9px 13px;border-radius:10px;background:var(--red-d);border:1px solid var(--red);color:var(--red);font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap">▶ Ver</a>`:''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  el.innerHTML=html;
+}
+
+async function saveExConfig(){
+  const btn=document.querySelector('[onclick="saveExConfig()"]');
+  const msg=document.getElementById('config-msg');
+  if(btn){btn.textContent='Guardando...';btn.disabled=true;}
+
+  const allEx=[];
+  Object.values(PROGRAMA).forEach(dia=>{
+    (dia.ejercicios||[]).forEach(ex=>{if(!allEx.find(e=>e.id===ex.id))allEx.push(ex);});
+  });
+
+  const config={_ts:Date.now()};
+  allEx.forEach(ex=>{
+    const vid=(document.getElementById('cfg-vid-'+ex.id)?.value||'').trim();
+    const series=parseInt(document.getElementById('cfg-series-'+ex.id)?.value)||ex.series;
+    const reps=(document.getElementById('cfg-reps-'+ex.id)?.value||ex.reps).trim();
+    config[ex.id]={video_url:vid,series,reps};
+  });
+
+  _exCfg=config;
+  sp('ex_config',config);
+  const ok=await fbSet('config','ejercicios',config);
+
+  if(btn){btn.textContent='☁️ Guardar y sincronizar';btn.disabled=false;}
+  if(msg){
+    msg.textContent=ok?'✅ Sincronizado con el móvil':'⚠️ Guardado local (Firebase error)';
+    setTimeout(()=>{msg.textContent=''},4000);
+  }
+  // Re-render to show updated ▶ Ver buttons
+  renderExConfig();
 }
 
 // ── HISTORY TAB ──
