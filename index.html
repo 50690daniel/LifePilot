@@ -2276,7 +2276,8 @@ async function foodSearch(){
     }
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'[]';
-    const groqItems=safeJsonParse(txt);
+    const groqItems=safeJsonParse(txt,[]);
+    if(!Array.isArray(groqItems)||!groqItems.length){renderFoodResults(offResults.slice(0,6),query);return}
     const groqResults=groqItems.map((item,i)=>({id:'g'+i,name:item.nombre||query,brand:item.marca||'',img:null,kcal100:Math.round(item.kcal_100g||0),prot100:+(item.prot_100g||0).toFixed(1),carbs100:+(item.carbs_100g||0).toFixed(1),grasas100:+(item.grasas_100g||0).toFixed(1),serving:item.porcion_tipica||null,servingQty:null,src:'groq'}));
     renderFoodResults([...offResults,...groqResults].slice(0,6),query);
   }catch(e){
@@ -2845,6 +2846,7 @@ Responde SOLO JSON sin texto extra:
     const data=await res.json();
     const txt=data.choices?.[0]?.message?.content||'{}';
     tardeSugsD=safeJsonParse(txt);
+    if(!tardeSugsD?.principal){throw new Error('Respuesta IA inválida')}
     tardeLoadedTodayD=hoy;
     renderTardeSugsDesktop(tardeSugsD,tiempoEst);
   }catch(e){
