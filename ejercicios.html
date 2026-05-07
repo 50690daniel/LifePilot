@@ -1163,13 +1163,7 @@ function renderWorkout(){
           <div class="ex-gif-loading"><div class="gif-spinner"></div>Cargando animación...</div>
         </div>
 
-        ${ex.video_url?`<a href="${ex.video_url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.25);border-radius:12px;margin-bottom:12px;text-decoration:none">
-          <span style="font-size:22px">▶️</span>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#ff453a">Ver vídeo de referencia</div>
-            <div style="font-size:11px;color:var(--tx3)">YouTube · técnica del ejercicio</div>
-          </div>
-        </a>`:''}
+        ${ex.video_url?ytBlock(ex.video_url):''}
 
         <!-- Instructions -->
         <div class="ex-instructions">
@@ -1515,6 +1509,29 @@ function closeComplete(){
   renderDayStrip();renderWeekSummary();renderWorkout();
 }
 
+
+// Extraer embed URL de YouTube (soporta watch?v=, youtu.be/, /shorts/)
+function ytEmbedUrl(url){
+  if(!url)return null;
+  let id=null;
+  try{
+    const u=new URL(url);
+    if(u.hostname.includes('youtu.be'))id=u.pathname.slice(1).split('?')[0];
+    else if(u.hostname.includes('youtube.com')){
+      if(u.pathname.includes('/shorts/'))id=u.pathname.split('/shorts/')[1].split('?')[0];
+      else id=u.searchParams.get('v');
+    }
+  }catch(e){}
+  return id?`https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`:null;
+}
+function ytBlock(url){
+  const embed=ytEmbedUrl(url);
+  if(!embed)return '';
+  return `<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:14px;margin-bottom:14px;background:#000">
+    <iframe src="${embed}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;border-radius:14px" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe>
+  </div>`;
+}
+
 // ── TAB SWITCHING ──
 function switchTab(tab){
   curTab=tab;
@@ -1716,6 +1733,18 @@ function renderProgram(){
 }
 
 // ── START ──
+// Exponer funciones globales explícitamente (por si el scope falla)
+window.selectDay=selectDay;
+window.saveExConfig=saveExConfig;
+window.renderExConfig=renderExConfig;
+window.toggleEx=toggleEx;
+window.toggleSet=toggleSet;
+window.saveWeight=saveWeight;
+window.getAICoach=getAICoach;
+window.skipRest=skipRest;
+window.finishWorkout=finishWorkout;
+window.closeComplete=closeComplete;
+window.goBackSmart=goBackSmart;
 init();
 </script>
 </body>
